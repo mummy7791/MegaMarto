@@ -1,0 +1,87 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=DM+Serif+Display:ital@0;1&display=swap");
+@import "tailwindcss";
+
+/* THEME VARIABLES */
+:root {
+    --color-app-green: #1b3022;
+    --color-app-green-light: #2d4a35;
+    --color-app-green-lighter: #3d6b4a;
+    --color-app-orange: #f97316;
+    --color-app-orange-dark: #ea580c;
+    --color-app-cream: #faf7f2;
+    --color-app-cream-dark: #f0ebe3;
+    --color-app-text: #1b3022;
+    --color-app-text-light: #6b7280;
+    --color-app-border: #e5e7eb;
+    --color-app-success: #22c55e;
+    --color-app-error: #ef4444;
+    --color-app-warning: #f59e0b;
+
+    --font-sans: "Outfit", sans-serif;
+    --font-serif: "DM Serif Display", serif;
+}
+
+/* GLOBAL */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    color: var(--color-app-text);
+    background-color: var(--color-app-cream);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-app-green-lighter);
+    border-radius: 10px;
+}
+
+/* COMMON STYLES */
+button {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+/* INPUT */
+input {
+    outline: none;
+    font-family: var(--font-sans);
+}
+
+/* REUSABLE CLASSES */
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}

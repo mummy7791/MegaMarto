@@ -1,0 +1,119 @@
+/* 🌈 BACKGROUND */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* 📦 CARD */
+.login-box {
+  width: 340px;
+  padding: 30px;
+
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+
+  border-radius: 15px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+
+  color: white;
+  text-align: center;
+
+  animation: fadeIn 0.6s ease;
+}
+
+/* ✨ ANIMATION */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🧾 TITLE */
+.login-box h2 {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* 🧾 INPUTS */
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+
+  border: none;
+  outline: none;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+/* ✨ Placeholder */
+.login-box input::placeholder {
+  color: #eee;
+}
+
+/* 🔥 INPUT FOCUS */
+.login-box input:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid #fff;
+}
+
+/* 🚀 BUTTON */
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: white;
+
+  border: none;
+  border-radius: 8px;
+
+  font-weight: bold;
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+/* 🔥 HOVER */
+.login-box button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 114, 255, 0.5);
+}
+
+/* ❌ DISABLED */
+.login-box button:disabled {
+  background: gray;
+  cursor: not-allowed;
+}
+
+/* 🔗 TEXT */
+.login-box p {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.login-box span {
+  color: #00c6ff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.login-box span:hover {
+  text-decoration: underline;
+}

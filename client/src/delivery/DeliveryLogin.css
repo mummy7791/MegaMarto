@@ -1,0 +1,240 @@
+.delivery-login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  font-family: "Outfit", sans-serif;
+  background: #f7f1ff;
+}
+
+.delivery-login-left {
+  background: linear-gradient(135deg, #7e22ce, #a855f7);
+  color: white;
+  padding: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.delivery-login-left::before {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  top: -90px;
+  right: -90px;
+}
+
+.delivery-login-left::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  bottom: -70px;
+  left: -70px;
+}
+
+.brand-pill {
+  width: fit-content;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 12px 18px;
+  border-radius: 30px;
+  font-weight: 900;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.delivery-login-left h1 {
+  font-size: 58px;
+  line-height: 1.05;
+  margin: 0 0 20px;
+  font-weight: 900;
+  position: relative;
+  z-index: 1;
+}
+
+.delivery-login-left p {
+  font-size: 19px;
+  max-width: 560px;
+  line-height: 1.6;
+  opacity: 0.95;
+  position: relative;
+  z-index: 1;
+}
+
+.partner-stats {
+  display: flex;
+  gap: 18px;
+  margin-top: 35px;
+  position: relative;
+  z-index: 1;
+}
+
+.partner-stats div {
+  background: rgba(255, 255, 255, 0.16);
+  padding: 18px 22px;
+  border-radius: 22px;
+  min-width: 125px;
+}
+
+.partner-stats h3 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.partner-stats span {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.delivery-login-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.delivery-login-card {
+  width: 100%;
+  max-width: 430px;
+  background: white;
+  border-radius: 30px;
+  padding: 34px;
+  box-shadow: 0 20px 45px rgba(126, 34, 206, 0.18);
+}
+
+.bike-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #f3e8ff;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  margin: 0 auto 16px;
+}
+
+.delivery-login-card h2 {
+  text-align: center;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.subtitle {
+  text-align: center;
+  margin: 10px 0 25px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.delivery-login-card label {
+  display: block;
+  margin: 14px 0 8px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.input-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 0 14px;
+  height: 56px;
+}
+
+.input-box:focus-within {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 4px #f3e8ff;
+}
+
+.input-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+}
+
+.eye-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.login-main-btn {
+  width: 100%;
+  margin-top: 24px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(34, 197, 94, 0.28);
+}
+
+.login-main-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.home-back-btn {
+  width: 100%;
+  margin-top: 12px;
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.safety-box {
+  margin-top: 22px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.safety-box p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+@media (max-width: 850px) {
+  .delivery-login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-login-left {
+    padding: 38px 24px;
+  }
+
+  .delivery-login-left h1 {
+    font-size: 38px;
+  }
+
+  .partner-stats {
+    flex-direction: column;
+  }
+
+  .delivery-login-right {
+    padding: 24px;
+  }
+}

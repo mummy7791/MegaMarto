@@ -243,7 +243,7 @@ app.get("/api", (req, res) => {
 
 /* ================= DATABASE ================= */
 mongoose
-  .connect(process.env.MONGO_URL || "mongodb://127.0.0.1:27017/megamarto")
+  .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/megamarto")
   .then(() => console.log("✅ DB Connected"))
   .catch((err) => console.log("❌ DB Error:", err));
 

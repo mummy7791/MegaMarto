@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./Home.css";
 import { useNavigate } from "react-router-dom";
 
@@ -87,6 +87,28 @@ const categoryCards = [
   },
 ];
 
+const heroCards = [
+  {
+    title: "⚡ 10 Minutes Delivery",
+    text: "Fresh groceries at your doorstep",
+    className: "purple",
+  },
+  {
+    title: "🥬 Fresh & Healthy",
+    text: "Daily fresh fruits and vegetables",
+    className: "green",
+  },
+  {
+    title: "🎁 FIRST50 Coupon",
+    text: "Save more on your first order",
+    className: "pink",
+  },
+  {
+    title: "🛒 MegaMarto Deals",
+    text: "Daily essentials at best prices",
+    className: "orange",
+  },
+];
 const trendingSearches = {
   categories:
     "Ice Creams | Fans & Coolers | Talcom Powder | Mosquito Nets | Sunscreen | Ice Cream Cake | Cold Beverages | Sunglasses",
@@ -134,6 +156,10 @@ function Home() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [locationLoading, setLocationLoading] = useState(false);
+
   const [cart, setCart] = useState<Product[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -142,8 +168,13 @@ function Home() {
     }
   });
 
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wishlist") || "[]");
+    } catch {
+      return [];
+    }
+  });
 
   const [userLocation, setUserLocation] = useState(() => {
     try {
@@ -156,27 +187,18 @@ function Home() {
     }
   });
 
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("wishlist") || "[]");
-    } catch {
-      return [];
-    }
-  });
-
   useEffect(() => {
     fetch(`${API_URL}/products`)
       .then((res) => res.json())
       .then((data) => setProducts(Array.isArray(data) ? data : []))
-      .catch((err) => console.log(err));
+      .catch((err) => console.log("PRODUCT ERROR:", err));
   }, []);
-
-  const reverseGeocode = async (lat: number, lng: number) => {
+    const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
       );
+
       const data = await res.json();
       const address = data?.address || {};
 
@@ -236,17 +258,6 @@ function Home() {
     );
   }, []);
 
-  const toggleWishlist = (id: string) => {
-    const updated = wishlist.includes(id)
-      ? wishlist.filter((w) => w !== id)
-      : [...wishlist, id];
-
-    setWishlist(updated);
-    localStorage.setItem("wishlist", JSON.stringify(updated));
-  };
-
-  const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0);
-
   const updateCart = (updated: Product[]) => {
     setCart(updated);
     localStorage.setItem("cart", JSON.stringify(updated));
@@ -278,70 +289,87 @@ function Home() {
         .filter((c) => (c.qty || 0) > 0)
     );
   };
+    const getQty = (id: string) => cart.find((c) => c._id === id)?.qty || 0;
 
-  const getQty = (id: string) => cart.find((c) => c._id === id)?.qty || 0;
+  const toggleWishlist = (id: string) => {
+    const updated = wishlist.includes(id)
+      ? wishlist.filter((w) => w !== id)
+      : [...wishlist, id];
 
-  const filteredProducts = products.filter((item) => {
-    const itemName = item.name.toLowerCase();
-    const itemCategory = item.category.toLowerCase();
-    const searchText = search.toLowerCase();
+    setWishlist(updated);
+    localStorage.setItem("wishlist", JSON.stringify(updated));
+  };
 
-    const matchesSearch =
-      itemName.includes(searchText) || itemCategory.includes(searchText);
+  const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-    if (selectedCategory === "All") return matchesSearch;
+  const filteredProducts = useMemo(() => {
+    return products.filter((item) => {
+      const itemName = item.name.toLowerCase();
+      const itemCategory = item.category.toLowerCase();
+      const searchText = search.toLowerCase();
 
-    const mapped = categoryMap[selectedCategory] || [selectedCategory];
+      const matchesSearch =
+        itemName.includes(searchText) || itemCategory.includes(searchText);
 
-    const matchesCategory = mapped.some((cat) => {
-      const c = cat.toLowerCase();
-      return itemCategory.includes(c) || itemName.includes(c);
+      if (selectedCategory === "All") return matchesSearch;
+
+      const mapped = categoryMap[selectedCategory] || [selectedCategory];
+
+      const matchesCategory = mapped.some((cat) => {
+        const c = cat.toLowerCase();
+        return itemCategory.includes(c) || itemName.includes(c);
+      });
+
+      return matchesSearch && matchesCategory;
     });
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const productSections = [
-    { title: "Laundry Care", list: filteredProducts.slice(0, 8) },
-    { title: "Rice", list: filteredProducts.slice(0, 8) },
-    { title: "Popular Products", list: filteredProducts },
-  ];
+  }, [products, search, selectedCategory]);
 
   return (
-    <div className="zepto-home">
-      <header className="zepto-header">
-        <div className="brand" onClick={() => navigate("/")}>
-          MegaMarto
+    <main className="home-page">
+      <section className="home-hero">
+        <div className="hero-left">
+          <div className="brand" onClick={() => navigate("/")}>
+            MegaMarto
+          </div>
+
+          <p className="hero-subtitle">
+            Fresh groceries, snacks, dairy and daily essentials delivered fast.
+          </p>
+
+          <button
+            type="button"
+            className="location-btn"
+            onClick={getLocation}
+            disabled={locationLoading}
+          >
+            📍 {locationLoading ? "Fetching..." : userLocation} ⌄
+          </button>
+
+          <div className="search-box">
+            <span>🔍</span>
+            <input
+              placeholder='Search for "banana"'
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="hero-actions">
+            <button onClick={() => navigate("/login")}>👤 Login</button>
+            <button onClick={() => navigate("/cart")}>🛒 Cart</button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          className="location-btn"
-          onClick={getLocation}
-          disabled={locationLoading}
-        >
-          📍 {locationLoading ? "Fetching..." : userLocation}⌄
-        </button>
-
-        <div className="search-box">
-          🔍
-          <input
-            placeholder='Search for "banana"'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="hero-right">
+          {heroCards.map((card) => (
+            <div className={`hero-card ${card.className}`} key={card.title}>
+              <h2>{card.title}</h2>
+              <p>{card.text}</p>
+            </div>
+          ))}
         </div>
-
-        <button className="icon-btn" onClick={() => navigate("/login")}>
-          👤 <span>Login</span>
-        </button>
-
-        <button className="icon-btn" onClick={() => navigate("/cart")}>
-          🛒 <span>Cart</span>
-        </button>
-      </header>
-
-      <nav className="tabs">
+      </section>
+            <nav className="tabs">
         {topTabs.map((cat) => (
           <button
             key={cat.name}
@@ -353,109 +381,100 @@ function Home() {
         ))}
       </nav>
 
-      <section className="hero-slider">
-        <div className="hero-track">
-          <div className="hero-card purple">
-            <h2>⚡ 10 Minutes Delivery</h2>
-            <p>Fresh groceries at your doorstep</p>
-          </div>
-          <div className="hero-card green">
-            <h2>🥬 Fresh & Healthy</h2>
-            <p>Daily fresh fruits and vegetables</p>
-          </div>
-          <div className="hero-card pink">
-            <h2>🎁 FIRST50 Coupon</h2>
-            <p>Save more on your first order</p>
-          </div>
-          <div className="hero-card orange">
-            <h2>🛒 MegaMarto Deals</h2>
-            <p>Daily essentials at best prices</p>
-          </div>
-        </div>
-      </section>
-
       <section className="category-section">
-        <h2>Grocery & Kitchen</h2>
+        <div className="section-head">
+          <h2>Grocery & Kitchen</h2>
+        </div>
 
         <div className="category-grid">
           {categoryCards.map((cat) => (
-            <div
+            <button
+              type="button"
               className="category-card"
               key={cat.title}
               onClick={() => setSelectedCategory(cat.key)}
             >
               <img src={cat.img} alt={cat.title} />
-              <h3>{cat.title}</h3>
-            </div>
+              <span>{cat.title}</span>
+            </button>
           ))}
         </div>
       </section>
 
-      {productSections.map((section) => (
-        <section className="product-section" key={section.title}>
-          <div className="section-head">
-            <h2>{section.title}</h2>
-            <button>See All ›</button>
-          </div>
+      <section className="product-section">
+        <div className="section-head">
+          <h2>
+            {selectedCategory === "All" ? "Popular Products" : selectedCategory}
+          </h2>
+          <button type="button">See All ›</button>
+        </div>
 
-          <div className="product-row">
-            {section.list.length === 0 ? (
-              <p>No products found</p>
-            ) : (
-              section.list.map((item) => {
-                const qty = getQty(item._id);
-                const mrp = item.price + 40;
-                const off = mrp - item.price;
+        <div className="product-grid">
+          {filteredProducts.length === 0 ? (
+            <p className="empty-text">No products found</p>
+          ) : (
+            filteredProducts.map((item) => {
+              const qty = getQty(item._id);
+              const mrp = item.price + 40;
 
-                return (
-                  <div className="product-card" key={item._id}>
-                    <div className="img-box">
+              return (
+                <article className="product-card" key={item._id}>
+                  <div className="product-img">
+                    <button
+                      type="button"
+                      className="wish-btn"
+                      onClick={() => toggleWishlist(item._id)}
+                    >
+                      {wishlist.includes(item._id) ? "❤️" : "🤍"}
+                    </button>
+
+                    <img
+                      src={item.image || "https://via.placeholder.com/300"}
+                      alt={item.name}
+                    />
+
+                    {qty === 0 ? (
                       <button
-                        className="wish-btn"
-                        onClick={() => toggleWishlist(item._id)}
+                        type="button"
+                        className="add-btn"
+                        onClick={() => addToCart(item)}
                       >
-                        {wishlist.includes(item._id) ? "❤️" : "🤍"}
+                        ADD
                       </button>
-
-                      <img
-                        src={item.image || "https://via.placeholder.com/300"}
-                        alt={item.name}
-                      />
-
-                      {qty === 0 ? (
+                    ) : (
+                      <div className="qty-pill">
                         <button
-                          className="add-btn"
-                          onClick={() => addToCart(item)}
+                          type="button"
+                          onClick={() => decreaseQty(item._id)}
                         >
-                          ADD
+                          -
                         </button>
-                      ) : (
-                        <div className="qty-pill">
-                          <button onClick={() => decreaseQty(item._id)}>-</button>
-                          <span>{qty}</span>
-                          <button onClick={() => increaseQty(item._id)}>+</button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="price-row">
-                      <b>₹{item.price}</b>
-                      <del>₹{mrp}</del>
-                    </div>
-
-                    <p className="off">₹{off} OFF</p>
-                    <h3>{item.name}</h3>
-                    <p className="pack">1 pack</p>
-                    <p className="rating">☘ 4.8 (2.6k)</p>
+                        <span>{qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => increaseQty(item._id)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
-                );
-              })
-            )}
-          </div>
-        </section>
-      ))}
 
-      <footer className="mart-footer">
+                  <div className="price-row">
+                    <b>₹{item.price}</b>
+                    <del>₹{mrp}</del>
+                  </div>
+
+                  <h3>{item.name}</h3>
+                  <p className="pack">1 pack</p>
+                  <p className="rating">☘ 4.8</p>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </section>
+            <footer className="mart-footer">
         <div className="footer-searches">
           <h2>Trending Searches</h2>
           <p>
@@ -488,47 +507,14 @@ function Home() {
             ))}
           </div>
         </div>
-
-        <div className="footer-main">
-          <div>
-            <h1 className="footer-logo">MegaMarto</h1>
-            <div className="footer-socials">📷 𝕏 f in</div>
-            <p>© MegaMarto Marketplace Private Limited</p>
-            <p>fssai lic no : 11224999000872</p>
-          </div>
-
-          <div>
-            <p>Home</p>
-            <p>Delivery Areas</p>
-            <p>Careers</p>
-            <p>Customer Support</p>
-            <p>Press</p>
-            <p>MegaMarto Blog</p>
-          </div>
-
-          <div>
-            <p>Privacy Policy</p>
-            <p>Terms of Use</p>
-            <p>Responsible Disclosure Policy</p>
-            <p>Sell on MegaMarto</p>
-            <p>Deliver with MegaMarto</p>
-            <p>Franchise with MegaMarto</p>
-          </div>
-
-          <div>
-            <h3>Download App</h3>
-            <button className="store-btn">▶ Get it on play store</button>
-            <button className="store-btn"> Get it on app store</button>
-          </div>
-        </div>
       </footer>
 
       {cartCount > 0 && (
-        <div className="floating-cart" onClick={() => navigate("/cart")}>
+        <button className="floating-cart" onClick={() => navigate("/cart")}>
           🛒 {cartCount} items | View Cart
-        </div>
+        </button>
       )}
-    </div>
+    </main>
   );
 }
 

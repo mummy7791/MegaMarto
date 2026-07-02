@@ -124,7 +124,7 @@ const popularSearches = {
   brands:
     "Yakult | Aashirvaad Atta | Too Yumm | Lays | Amul | Fortune Oil | Mother Dairy | Nandini Milk",
   categories:
-    "Grocery | Chips | Curd | Eggs price | Cheese slice | Fresh fruits | Fresh vegetables | Paneer price",
+    "Grocery | Chips | Curd | Eggs | Cheese | Fruits | Vegetables | Paneer",
 };
 
 const footerCategories = [
@@ -191,7 +191,7 @@ function Home() {
     fetch(`${API_URL}/products`)
       .then((res) => res.json())
       .then((data) => setProducts(Array.isArray(data) ? data : []))
-      .catch((err) => console.log("PRODUCT ERROR:", err));
+      .catch(console.error);
   }, []);
     const reverseGeocode = async (lat: number, lng: number) => {
     try {
@@ -326,43 +326,46 @@ function Home() {
 
   return (
     <main className="home-page">
-      <section className="home-hero">
-        <div className="hero-left">
-          <div className="brand" onClick={() => navigate("/")}>
-            MegaMarto
-          </div>
+      <section className="mega-hero">
+        <div className="mega-hero-left">
+          <div className="hero-badge">⚡ MegaMarto Fast Delivery</div>
 
-          <p className="hero-subtitle">
-            Fresh groceries, snacks, dairy and daily essentials delivered fast.
+          <h1>
+            Groceries delivered
+            <span> in minutes</span>
+          </h1>
+
+          <p>
+            Fresh fruits, dairy, snacks, beauty, home essentials and daily needs
+            delivered fast to your doorstep.
           </p>
 
-          <button
-            type="button"
-            className="location-btn"
-            onClick={getLocation}
-            disabled={locationLoading}
-          >
-            📍 {locationLoading ? "Fetching..." : userLocation} ⌄
-          </button>
+          <div className="hero-location" onClick={getLocation}>
+            <span>📍</span>
+            <div>
+              <b>{locationLoading ? "Fetching..." : "Delivery Location"}</b>
+              <small>{userLocation}</small>
+            </div>
+          </div>
 
-          <div className="search-box">
+          <div className="hero-search">
             <span>🔍</span>
             <input
-              placeholder='Search for "banana"'
+              placeholder='Search for "milk, fruits, snacks"'
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
           <div className="hero-actions">
-            <button onClick={() => navigate("/login")}>👤 Login</button>
+            <button onClick={() => navigate("/customer-login")}>👤 Login</button>
             <button onClick={() => navigate("/cart")}>🛒 Cart</button>
           </div>
         </div>
 
-        <div className="hero-right">
+        <div className="mega-hero-right">
           {heroCards.map((card) => (
-            <div className={`hero-card ${card.className}`} key={card.title}>
+            <div className={`mega-offer-card ${card.className}`} key={card.title}>
               <h2>{card.title}</h2>
               <p>{card.text}</p>
             </div>
@@ -384,6 +387,7 @@ function Home() {
       <section className="category-section">
         <div className="section-head">
           <h2>Grocery & Kitchen</h2>
+          <button type="button">See All ›</button>
         </div>
 
         <div className="category-grid">
@@ -443,17 +447,11 @@ function Home() {
                       </button>
                     ) : (
                       <div className="qty-pill">
-                        <button
-                          type="button"
-                          onClick={() => decreaseQty(item._id)}
-                        >
+                        <button type="button" onClick={() => decreaseQty(item._id)}>
                           -
                         </button>
                         <span>{qty}</span>
-                        <button
-                          type="button"
-                          onClick={() => increaseQty(item._id)}
-                        >
+                        <button type="button" onClick={() => increaseQty(item._id)}>
                           +
                         </button>
                       </div>

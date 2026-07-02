@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import "../styles/Auth.css";
 
@@ -15,6 +15,9 @@ const API_URL = "https://megamarto-backend.onrender.com";
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAdminLogin = location.pathname === "/admin-login";
 
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +36,8 @@ function Login() {
     localStorage.removeItem("customerUser");
     localStorage.removeItem("deliveryToken");
     localStorage.removeItem("deliveryUser");
+    localStorage.removeItem("storeToken");
+    localStorage.removeItem("storeUser");
   };
 
   const handleLogin = async () => {
@@ -49,9 +54,7 @@ function Login() {
 
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: cleanLoginId,
           mobile: cleanLoginId,
@@ -68,6 +71,16 @@ function Login() {
 
       const user: User = data.user;
       const role = user.role?.toLowerCase() || "user";
+
+      if (isAdminLogin && role !== "admin") {
+        toast.error("Admin access only");
+        return;
+      }
+
+      if (!isAdminLogin && role === "admin") {
+        toast.error("Please use Admin Login");
+        return;
+      }
 
       clearOldAuth();
 
@@ -109,9 +122,7 @@ function Login() {
 
       const res = await fetch(`${API_URL}/forgot-password`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mobile: cleanMobile,
           newPassword: cleanPassword,
@@ -138,39 +149,65 @@ function Login() {
   };
 
   const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  if (e.key === "Enter" && !loading) {
-    if (forgotOpen) {
-      handleForgotPassword();
-    } else {
-      handleLogin();
+    if (e.key === "Enter" && !loading) {
+      if (forgotOpen) handleForgotPassword();
+      else handleLogin();
     }
-  }
-};
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <div className="brand-badge">⚡ MegaMarto</div>
+        <div className="brand-badge">
+          {isAdminLogin ? "🛡️ MegaMarto Admin" : "⚡ MegaMarto"}
+        </div>
+
         <h1>
-          Welcome back
+          {isAdminLogin ? "Admin Panel" : "Welcome back"}
           <br />
-          to MegaMarto
+          {isAdminLogin ? "Login" : "to MegaMarto"}
         </h1>
-        <p>Login with email or mobile number and continue shopping.</p>
+
+        <p>
+          {isAdminLogin
+            ? "Manage products, orders, stores and delivery partners securely."
+            : "Login with email or mobile number and continue shopping."}
+        </p>
+
         <div className="auth-features">
-          <div>🚀 Fast delivery</div>
-          <div>🛒 Easy checkout</div>
-          <div>📍 Live tracking</div>
+          {isAdminLogin ? (
+            <>
+              <div>📦 Orders</div>
+              <div>🛒 Products</div>
+              <div>🚴 Delivery</div>
+            </>
+          ) : (
+            <>
+              <div>🚀 Fast delivery</div>
+              <div>🛒 Easy checkout</div>
+              <div>📍 Live tracking</div>
+            </>
+          )}
         </div>
       </div>
 
       <div className="auth-right">
         <div className="auth-card">
-          <div className="auth-logo">🛒</div>
+          <div className="auth-logo">{isAdminLogin ? "🛡️" : "🛒"}</div>
 
-          <h2>{forgotOpen ? "Reset Password" : "Login"}</h2>
+          <h2>
+            {forgotOpen
+              ? "Reset Password"
+              : isAdminLogin
+              ? "Admin Login"
+              : "Customer Login"}
+          </h2>
+
           <p className="auth-subtitle">
             {forgotOpen
               ? "Enter registered mobile number"
+              : isAdminLogin
+              ? "Only admin users can login here"
               : "Use email or mobile number"}
           </p>
 
@@ -201,23 +238,45 @@ function Login() {
                 />
               </div>
 
-              <p className="auth-link forgot-link">
-                <span onClick={() => setForgotOpen(true)}>
-                  Forgot password?
-                </span>
-              </p>
+              {!isAdminLogin && (
+                <p className="auth-link forgot-link">
+                  <span onClick={() => setForgotOpen(true)}>
+                    Forgot password?
+                  </span>
+                </p>
+              )}
 
               <button
                 className="auth-main-btn"
                 onClick={handleLogin}
                 disabled={loading}
               >
-                {loading ? "Logging in..." : "Login"}
+                {loading
+                  ? "Logging in..."
+                  : isAdminLogin
+                  ? "Login as Admin"
+                  : "Login"}
               </button>
 
+              {!isAdminLogin && (
+                <p className="auth-link">
+                  Don&apos;t have an account?{" "}
+                  <span onClick={() => navigate("/customer-register")}>
+                    Register
+                  </span>
+                </p>
+              )}
+
               <p className="auth-link">
-                Don&apos;t have an account?{" "}
-                <span onClick={() => navigate("/register")}>Register</span>
+                {isAdminLogin ? (
+                  <span onClick={() => navigate("/customer-login")}>
+                    Go to Customer Login
+                  </span>
+                ) : (
+                  <span onClick={() => navigate("/admin-login")}>
+                    Admin Login
+                  </span>
+                )}
               </p>
             </>
           ) : (

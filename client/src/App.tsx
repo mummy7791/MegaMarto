@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
-/* ================= USER PAGES ================= */
+/* USER */
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import Login from "./pages/login";
@@ -17,40 +17,36 @@ import MyOrders from "./pages/MyOrders";
 import OrderTracking from "./pages/OderTracking";
 import Profile from "./pages/Profile";
 
-/* ================= ADMIN ================= */
+/* ADMIN */
 import AdminOrders from "./admin/AdminOrders";
 import AdminDashboard from "./admin/AdminDashboard";
 import Stores from "./pages/Stores";
 
-/* ================= DELIVERY ================= */
+/* DELIVERY */
 import DeliveryLogin from "./delivery/DeliveryLogin";
 import DeliveryDashboard from "./delivery/DeliveryDashboard";
 
-/* ================= STORE ================= */
+/* STORE */
 import StoreLogin from "./store/StoreLogin";
 import StoreDashboard from "./store/StoreDashboard";
 
-/* ================= COMPONENTS ================= */
+/* COMPONENTS */
 import Navbar from "./components/Navbar";
 
-/* ================= AUTH HELPERS ================= */
-const isValidToken = (token: string | null) => {
-  return !!(
-    token &&
-    token !== "undefined" &&
-    token !== "null" &&
-    token.trim() !== ""
-  );
-};
+const validToken = (token: string | null) =>
+  !!token && token !== "undefined" && token !== "null" && token.trim() !== "";
 
 function AppContent() {
   const location = useLocation();
 
-  const isCustomerAuth = isValidToken(localStorage.getItem("customerToken"));
-  const isDeliveryAuth = isValidToken(localStorage.getItem("deliveryToken"));
-  const isStoreAuth = isValidToken(localStorage.getItem("storeToken"));
+  const customerAuth = validToken(localStorage.getItem("customerToken"));
+  const adminAuth = validToken(localStorage.getItem("adminToken"));
+  const storeAuth = validToken(localStorage.getItem("storeToken"));
+  const deliveryAuth = validToken(localStorage.getItem("deliveryToken"));
 
   const hideNavbar =
+    location.pathname.includes("login") ||
+    location.pathname.includes("register") ||
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/store") ||
     location.pathname.startsWith("/delivery");
@@ -59,81 +55,68 @@ function AppContent() {
     <>
       {!hideNavbar && <Navbar />}
 
-      <div style={{ paddingTop: hideNavbar ? "0px" : "70px" }}>
+      <main style={{ paddingTop: hideNavbar ? 0 : 70 }}>
         <Routes>
-          {/* USER */}
+          {/* CUSTOMER */}
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<Cart />} />
 
+          <Route path="/login" element={<Navigate to="/customer-login" />} />
           <Route
-            path="/login"
-            element={isCustomerAuth ? <Navigate to="/" replace /> : <Login />}
+            path="/customer-login"
+            element={customerAuth ? <Navigate to="/" replace /> : <Login />}
           />
-
           <Route
-            path="/register"
-            element={
-              isCustomerAuth ? <Navigate to="/" replace /> : <Register />
-            }
+            path="/customer-register"
+            element={customerAuth ? <Navigate to="/" replace /> : <Register />}
           />
+          <Route path="/register" element={<Navigate to="/customer-register" />} />
 
           <Route
             path="/profile"
-            element={
-              isCustomerAuth ? <Profile /> : <Navigate to="/login" replace />
-            }
+            element={customerAuth ? <Profile /> : <Navigate to="/customer-login" />}
           />
-
           <Route
             path="/checkout"
-            element={
-              isCustomerAuth ? <Checkout /> : <Navigate to="/login" replace />
-            }
+            element={customerAuth ? <Checkout /> : <Navigate to="/customer-login" />}
           />
-
           <Route
             path="/orders"
-            element={
-              isCustomerAuth ? <MyOrders /> : <Navigate to="/login" replace />
-            }
+            element={customerAuth ? <MyOrders /> : <Navigate to="/customer-login" />}
           />
-
           <Route
             path="/track/:id"
             element={
-              isCustomerAuth ? (
-                <OrderTracking />
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              customerAuth ? <OrderTracking /> : <Navigate to="/customer-login" />
             }
           />
 
-          {/* ADMIN - SEPARATE DIRECT PAGE */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/stores" element={<Stores />} />
+          {/* ADMIN */}
+          <Route path="/admin-login" element={<Login />} />
+          <Route
+            path="/admin"
+            element={adminAuth ? <AdminDashboard /> : <Navigate to="/admin-login" />}
+          />
+          <Route
+            path="/admin/orders"
+            element={adminAuth ? <AdminOrders /> : <Navigate to="/admin-login" />}
+          />
+          <Route
+            path="/admin/stores"
+            element={adminAuth ? <Stores /> : <Navigate to="/admin-login" />}
+          />
 
           {/* STORE */}
           <Route
             path="/store-login"
             element={
-              isStoreAuth ? (
-                <Navigate to="/store-dashboard" replace />
-              ) : (
-                <StoreLogin />
-              )
+              storeAuth ? <Navigate to="/store-dashboard" replace /> : <StoreLogin />
             }
           />
-
           <Route
             path="/store-dashboard"
             element={
-              isStoreAuth ? (
-                <StoreDashboard />
-              ) : (
-                <Navigate to="/store-login" replace />
-              )
+              storeAuth ? <StoreDashboard /> : <Navigate to="/store-login" />
             }
           />
 
@@ -141,28 +124,27 @@ function AppContent() {
           <Route
             path="/delivery-login"
             element={
-              isDeliveryAuth ? (
+              deliveryAuth ? (
                 <Navigate to="/delivery-dashboard" replace />
               ) : (
                 <DeliveryLogin />
               )
             }
           />
-
           <Route
             path="/delivery-dashboard"
             element={
-              isDeliveryAuth ? (
+              deliveryAuth ? (
                 <DeliveryDashboard />
               ) : (
-                <Navigate to="/delivery-login" replace />
+                <Navigate to="/delivery-login" />
               )
             }
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
+      </main>
     </>
   );
 }

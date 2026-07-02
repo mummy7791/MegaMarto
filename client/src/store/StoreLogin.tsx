@@ -1,21 +1,19 @@
 import { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import "../styles/Auth.css";
 
-const API = "http://https://megamarto-backend.onrender.com";
+const API = "https://megamarto-backend.onrender.com";
 
 export default function StoreLogin() {
-  
+  const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const loginStore = async () => {
-    if (!form.email || !form.password) {
+    if (!email || !password) {
       toast.error("Please enter email and password");
       return;
     }
@@ -29,8 +27,8 @@ export default function StoreLogin() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email.trim(),
-          password: form.password,
+          email: email.trim(),
+          password,
         }),
       });
 
@@ -44,99 +42,99 @@ export default function StoreLogin() {
       localStorage.setItem("storeToken", data.token);
       localStorage.setItem("storeUser", JSON.stringify(data.store));
 
-      toast.success("Store login successful ✅");
+      toast.success(`Welcome ${data.store.storeName} 🏪`);
 
-      setTimeout(() => {
-        window.location.href = "/store-dashboard";
-      }, 500);
+      navigate("/store-dashboard", {
+        replace: true,
+      });
     } catch (err) {
-      console.log("STORE LOGIN ERROR:", err);
-      toast.error("Server error");
+      console.log(err);
+      toast.error("Server Error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>🏪 Store Login</h2>
-        <p style={styles.subtitle}>Login to manage your products and orders</p>
+    <div className="auth-page">
+      <div
+        className="auth-left"
+        style={{
+          background:
+            "linear-gradient(135deg,#059669,#16a34a,#22c55e)",
+        }}
+      >
+        <div className="brand-badge">🏪 MegaMarto Store</div>
 
-        <input
-          style={styles.input}
-          placeholder="Store Email"
-          value={form.email}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, email: e.target.value }))
-          }
-        />
+        <h1>
+          Store
+          <br />
+          Partner Portal
+        </h1>
 
-        <input
-          style={styles.input}
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, password: e.target.value }))
-          }
-        />
+        <p>
+          Manage your store, products, inventory and customer orders from one
+          dashboard.
+        </p>
 
-        <button style={styles.button} onClick={loginStore} disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+        <div className="auth-features">
+          <div>📦 Products</div>
+          <div>🛒 Orders</div>
+          <div>📈 Analytics</div>
+        </div>
+      </div>
+
+      <div className="auth-right">
+        <div className="auth-card">
+
+          <div className="auth-logo">🏪</div>
+
+          <h2>Store Login</h2>
+
+          <p className="auth-subtitle">
+            Login to your store account
+          </p>
+
+          <label>Email</label>
+
+          <div className="auth-input">
+            <span>📧</span>
+
+            <input
+              placeholder="Store Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <label>Password</label>
+
+          <div className="auth-input">
+            <span>🔒</span>
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <button
+            className="auth-main-btn"
+            onClick={loginStore}
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Store Login"}
+          </button>
+
+          <p className="auth-link">
+            <span onClick={() => navigate("/")}>
+              ← Back to Shop
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "calc(100vh - 70px)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #16a34a, #22c55e)",
-    padding: "20px",
-  },
-  card: {
-    width: "100%",
-    maxWidth: "430px",
-    background: "#fff",
-    padding: "30px",
-    borderRadius: "24px",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.2)",
-  },
-  title: {
-    margin: 0,
-    textAlign: "center",
-    fontSize: "28px",
-    fontWeight: 900,
-  },
-  subtitle: {
-    textAlign: "center",
-    color: "#64748b",
-    fontWeight: 700,
-    marginBottom: "24px",
-  },
-  input: {
-    width: "100%",
-    padding: "15px",
-    marginBottom: "14px",
-    border: "1px solid #d1d5db",
-    borderRadius: "14px",
-    fontSize: "16px",
-    outline: "none",
-  },
-  button: {
-    width: "100%",
-    padding: "15px",
-    border: "none",
-    borderRadius: "16px",
-    background: "linear-gradient(135deg, #111827, #374151)",
-    color: "#fff",
-    fontSize: "17px",
-    fontWeight: 900,
-    cursor: "pointer",
-  },
-};

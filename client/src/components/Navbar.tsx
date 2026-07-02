@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { CSSProperties } from "react";
+import "./Navbar.css";
 
 type Product = {
   id?: number;
@@ -13,15 +13,11 @@ type Product = {
 type User = {
   name?: string;
   username?: string;
+  email?: string;
 };
 
 const isValidToken = (token: string | null) => {
-  return !!(
-    token &&
-    token !== "undefined" &&
-    token !== "null" &&
-    token.trim() !== ""
-  );
+  return !!token && token !== "undefined" && token !== "null" && token.trim() !== "";
 };
 
 const getUserFromStorage = (key: string): User | null => {
@@ -38,27 +34,25 @@ function Navbar() {
   const location = useLocation();
 
   const [cartCount, setCartCount] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isCustomerAuth = isValidToken(localStorage.getItem("customerToken"));
   const customerUser = getUserFromStorage("customerUser");
 
-  const displayName =
-    customerUser?.name || customerUser?.username || "Customer";
+  const displayName = customerUser?.name || customerUser?.username || "Customer";
 
   useEffect(() => {
     const updateCart = () => {
       try {
         const cart: Product[] = JSON.parse(localStorage.getItem("cart") || "[]");
-        const count = cart.reduce((sum, item) => sum + (item.qty || 0), 0);
-        setCartCount(count);
+        setCartCount(cart.reduce((sum, item) => sum + (item.qty || 0), 0));
       } catch {
         setCartCount(0);
       }
     };
 
     updateCart();
-
     window.addEventListener("storage", updateCart);
     window.addEventListener("cartUpdated", updateCart);
 
@@ -68,203 +62,82 @@ function Navbar() {
     };
   }, []);
 
-  const closeMenu = () => setShowMenu(false);
+  const goTo = (path: string) => {
+    setProfileOpen(false);
+    setMobileOpen(false);
+    navigate(path);
+  };
 
   const logoutCustomer = () => {
     localStorage.removeItem("customerToken");
     localStorage.removeItem("customerUser");
-    closeMenu();
-    window.location.href = "/login";
+    setProfileOpen(false);
+    setMobileOpen(false);
+    navigate("/customer-login", { replace: true });
   };
 
-  const goTo = (path: string) => {
-    closeMenu();
-    navigate(path);
-  };
-
-  const isActive = (path: string) =>
-    location.pathname === path ? styles.activeBtn : {};
+  const active = (path: string) => (location.pathname === path ? "nav-active" : "");
 
   return (
-    <div style={styles.navbar}>
-      <h2 style={styles.logo} onClick={() => goTo("/")}>
-        🛒 MegaMarto
-      </h2>
+    <header className="mm-navbar">
+      <div className="mm-logo" onClick={() => goTo("/")}>
+        <span>🛒</span>
+        <b>MegaMarto</b>
+      </div>
 
-      <div style={styles.links}>
-        <button
-          style={{ ...styles.navBtn, ...isActive("/") }}
-          onClick={() => goTo("/")}
-        >
+      <div className="mm-search">
+        <span>🔍</span>
+        <input placeholder='Search for "milk, fruits, snacks"' />
+      </div>
+
+      <button className="mm-menu-btn" onClick={() => setMobileOpen((p) => !p)}>
+        ☰
+      </button>
+
+      <nav className={mobileOpen ? "mm-links open" : "mm-links"}>
+        <button className={active("/")} onClick={() => goTo("/")}>
           Home
         </button>
 
-        <div style={styles.cartWrapper} onClick={() => goTo("/cart")}>
-          🛒
-          {cartCount > 0 && <span style={styles.badge}>{cartCount}</span>}
-        </div>
+        <button onClick={() => goTo("/admin-login")}>Admin</button>
+        <button onClick={() => goTo("/store-login")}>Store</button>
+        <button onClick={() => goTo("/delivery-login")}>Delivery</button>
+
+        <button className="cart-btn" onClick={() => goTo("/cart")}>
+          🛒 Cart
+          {cartCount > 0 && <span>{cartCount}</span>}
+        </button>
 
         {isCustomerAuth ? (
-          <>
+          <div className="profile-area">
             <button
-              style={{ ...styles.navBtn, ...isActive("/orders") }}
-              onClick={() => goTo("/orders")}
-            >
-              Orders
-            </button>
-
-            <button
-              style={styles.profileBtn}
-              onClick={() => setShowMenu((prev) => !prev)}
+              className="profile-btn"
+              onClick={() => setProfileOpen((p) => !p)}
             >
               👋 {displayName}
             </button>
 
-            {showMenu && (
-              <div style={styles.dropdown}>
-                <div style={styles.dropItem} onClick={() => goTo("/profile")}>
-                  👤 Profile
-                </div>
-
-                <div style={styles.dropItem} onClick={() => goTo("/orders")}>
-                  🧾 My Orders
-                </div>
-
-                <div style={styles.dropItemDanger} onClick={logoutCustomer}>
+            {profileOpen && (
+              <div className="profile-dropdown">
+                <p onClick={() => goTo("/profile")}>👤 Profile</p>
+                <p onClick={() => goTo("/orders")}>🧾 My Orders</p>
+                <p className="danger" onClick={logoutCustomer}>
                   🚪 Logout
-                </div>
+                </p>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <>
-            <button
-              style={{ ...styles.navBtn, ...isActive("/login") }}
-              onClick={() => goTo("/login")}
-            >
-              Login
-            </button>
-
-            <button style={styles.registerBtn} onClick={() => goTo("/register")}>
+            <button onClick={() => goTo("/customer-login")}>Login</button>
+            <button className="join-btn" onClick={() => goTo("/customer-register")}>
               Register
             </button>
           </>
         )}
-      </div>
-    </div>
+      </nav>
+    </header>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  navbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 25px",
-    background: "linear-gradient(135deg, #141e30, #243b55)",
-    color: "white",
-    position: "sticky",
-    top: 0,
-    zIndex: 99999,
-    overflow: "visible",
-  },
-
-  logo: {
-    cursor: "pointer",
-    fontWeight: "bold",
-    margin: 0,
-  },
-
-  links: {
-    display: "flex",
-    gap: "15px",
-    alignItems: "center",
-    overflow: "visible",
-    position: "relative",
-  },
-
-  navBtn: {
-    background: "transparent",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: "15px",
-  },
-
-  activeBtn: {
-    background: "#00c6ff",
-    color: "black",
-    padding: "8px 12px",
-    borderRadius: "8px",
-  },
-
-  registerBtn: {
-    background: "#00c6ff",
-    color: "black",
-    border: "none",
-    padding: "8px 12px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  cartWrapper: {
-    position: "relative",
-    cursor: "pointer",
-    fontSize: "22px",
-  },
-
-  badge: {
-    position: "absolute",
-    top: "-8px",
-    right: "-12px",
-    background: "red",
-    color: "white",
-    borderRadius: "50%",
-    padding: "2px 7px",
-    fontSize: "12px",
-    fontWeight: "bold",
-  },
-
-  profileBtn: {
-    background: "transparent",
-    border: "none",
-    color: "white",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    padding: "8px 10px",
-  },
-
-  dropdown: {
-    position: "absolute",
-    right: 0,
-    top: "45px",
-    background: "#ffffff",
-    color: "#111827",
-    borderRadius: "14px",
-    width: "220px",
-    boxShadow: "0 12px 35px rgba(0,0,0,0.25)",
-    zIndex: 999999,
-    overflow: "hidden",
-  },
-
-  dropItem: {
-    padding: "14px 16px",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: 600,
-    borderBottom: "1px solid #f1f1f1",
-  },
-
-  dropItemDanger: {
-    padding: "14px 16px",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: 700,
-    color: "red",
-  },
-};
 
 export default Navbar;

@@ -29,24 +29,27 @@ button {
   overflow-x: hidden;
 }
 
-/* HERO */
+/* ================= HERO ================= */
+
 .home-hero {
+  width: 100%;
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
-  padding: 32px;
+  padding: 24px;
   align-items: stretch;
 }
 
 .hero-left {
   width: 100%;
   min-width: 0;
+  min-height: 330px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 16px;
   padding: 28px;
-  border-radius: 24px;
+  border-radius: 26px;
   background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
   border: 1px solid #ede9fe;
   box-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
@@ -54,7 +57,7 @@ button {
 
 .hero-left h1 {
   margin: 0;
-  font-size: clamp(28px, 5vw, 64px);
+  font-size: clamp(30px, 4vw, 56px);
   line-height: 1.08;
   font-weight: 900;
   letter-spacing: -1px;
@@ -63,55 +66,11 @@ button {
 
 .hero-left p {
   margin: 0;
-  max-width: 520px;
-  font-size: clamp(15px, 2vw, 20px);
-  line-height: 1.7;
-  color: #64748b;
-  font-weight: 600;
-}
-@media (max-width:768px){
-
-  .hero-left{
-    padding:20px;
-    border-radius:20px;
-    gap:14px;
-  }
-
-  .hero-left h1{
-    font-size:34px;
-    line-height:1.15;
-  }
-
-  .hero-left p{
-    font-size:15px;
-    line-height:1.6;
-  }
-
-}
-
-@media (max-width:480px){
-
-  .hero-left{
-    padding:18px;
-    border-radius:18px;
-  }
-
-  .hero-left h1{
-    font-size:30px;
-  }
-
-  .hero-left p{
-    font-size:14px;
-  }
-
-}
-
-.hero-left p {
-  font-size: clamp(16px, 2vw, 22px);
+  max-width: 560px;
+  font-size: clamp(15px, 1.4vw, 20px);
+  line-height: 1.6;
   color: #64748b;
   font-weight: 700;
-  max-width: 650px;
-  margin: 0;
 }
 
 .location-btn {
@@ -120,9 +79,9 @@ button {
   border: none;
   background: #ffffff;
   color: #475569;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
-  padding: 14px 18px;
+  padding: 13px 16px;
   border-radius: 16px;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
@@ -133,15 +92,15 @@ button {
 
 .search-box {
   width: 100%;
-  height: 62px;
+  height: 58px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 20px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 20px;
-  font-size: 24px;
+  gap: 12px;
+  padding: 0 18px;
+  font-size: 22px;
 }
 
 .search-box input {
@@ -149,11 +108,12 @@ button {
   min-width: 0;
   border: none;
   outline: none;
-  font-size: 20px;
+  font-size: 18px;
   background: transparent;
 }
 
 .hero-right {
+  width: 100%;
   min-width: 0;
   display: grid;
   grid-template-columns: 1fr;
@@ -161,10 +121,11 @@ button {
 }
 
 .hero-card {
-  border-radius: 30px;
-  padding: 32px;
+  width: 100%;
+  min-height: 155px;
+  border-radius: 26px;
+  padding: 28px;
   color: white;
-  min-height: 190px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -172,12 +133,13 @@ button {
 }
 
 .hero-card h2 {
-  font-size: clamp(24px, 3vw, 38px);
+  font-size: clamp(24px, 2.7vw, 36px);
   margin: 0 0 10px;
+  line-height: 1.15;
 }
 
 .hero-card p {
-  font-size: 18px;
+  font-size: clamp(15px, 1.4vw, 18px);
   margin: 0;
   opacity: 0.95;
 }
@@ -188,6 +150,95 @@ button {
 
 .green {
   background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.pink {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+}
+
+.orange {
+  background: linear-gradient(135deg, #f97316, #fb923c);
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .hero-left {
+    min-height: auto;
+    padding: 22px;
+  }
+
+  .hero-right {
+    display: flex;
+    overflow-x: auto;
+    gap: 14px;
+    scrollbar-width: none;
+  }
+
+  .hero-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero-card {
+    flex: 0 0 86%;
+    min-height: 140px;
+    padding: 22px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .home-hero {
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .hero-left {
+    padding: 18px;
+    border-radius: 20px;
+    gap: 14px;
+  }
+
+  .hero-left h1 {
+    font-size: 30px;
+  }
+
+  .hero-left p {
+    font-size: 14px;
+  }
+
+  .location-btn {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+
+  .search-box {
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .search-box input {
+    font-size: 15px;
+  }
+
+  .hero-card {
+    flex: 0 0 88%;
+    min-height: 130px;
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .hero-card h2 {
+    font-size: 22px;
+  }
+
+  .hero-card p {
+    font-size: 14px;
+  }
 }
 
 /* TABS */

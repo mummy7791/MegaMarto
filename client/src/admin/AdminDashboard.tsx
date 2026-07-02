@@ -38,7 +38,7 @@ type TabType =
   | "orders"
   | "delivery";
 
-const API = "http://https://megamarto-backend.onrender.com";
+const API = "https://megamarto-backend.onrender.com";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<TabType>("dashboard");

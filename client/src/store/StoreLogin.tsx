@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import toast from "react-hot-toast";
 
-const API = "http://localhost:5000";
+const API = "http://https://megamarto-backend.onrender.com";
 
 export default function StoreLogin() {
   

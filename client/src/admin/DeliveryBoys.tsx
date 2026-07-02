@@ -47,7 +47,7 @@ export default function DeliveryBoys() {
   const fetchBoys = useCallback(async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/admin/delivery-boys",
+        "http://https://megamarto-backend.onrender.com/admin/delivery-boys",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -87,8 +87,8 @@ export default function DeliveryBoys() {
       }
 
       const url = editId
-        ? `http://localhost:5000/admin/delivery-boy/${editId}`
-        : "http://localhost:5000/admin/delivery-boys";
+        ? `http://https://megamarto-backend.onrender.com/admin/delivery-boy/${editId}`
+        : "http://https://megamarto-backend.onrender.com/admin/delivery-boys";
 
       const method = editId ? "PUT" : "POST";
 
@@ -130,7 +130,7 @@ export default function DeliveryBoys() {
   const deleteBoy = async (id: string) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/admin/delivery-boy/${id}`,
+        `http://https://megamarto-backend.onrender.com/admin/delivery-boy/${id}`,
         {
           method: "DELETE",
           headers: {

@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import "./StoreDashboard.css";
 
-const API = "http://localhost:5000";
+const API = "http://https://megamarto-backend.onrender.com";
 
 const socket = io(API, {
   autoConnect: false,

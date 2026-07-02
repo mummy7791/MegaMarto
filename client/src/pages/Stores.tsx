@@ -18,7 +18,7 @@ type StoreForm = {
   address: string;
 };
 
-const API = "http://localhost:5000";
+const API = "http://https://megamarto-backend.onrender.com";
 
 export default function Stores() {
   const [stores, setStores] = useState<Store[]>([]);

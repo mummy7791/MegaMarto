@@ -24,7 +24,7 @@ export default function AdminAssignDragDrop() {
 
     const fetchOrders = async () => {
       try {
-        const res = await fetch("http://localhost:5000/admin/orders", {
+        const res = await fetch("http://https://megamarto-backend.onrender.com/admin/orders", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -39,7 +39,7 @@ export default function AdminAssignDragDrop() {
     const fetchBoys = async () => {
       try {
         const res = await fetch(
-          "http://localhost:5000/delivery/delivery-boys",
+          "http://https://megamarto-backend.onrender.com/delivery/delivery-boys",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -74,7 +74,7 @@ export default function AdminAssignDragDrop() {
 
     try {
       await fetch(
-        `http://localhost:5000/admin/assign-order/${orderId}`,
+        `http://https://megamarto-backend.onrender.com/admin/assign-order/${orderId}`,
         {
           method: "PUT",
           headers: {
@@ -88,7 +88,7 @@ export default function AdminAssignDragDrop() {
       alert("Order Assigned 🚴");
 
       // refresh safely
-      const res = await fetch("http://localhost:5000/admin/orders", {
+      const res = await fetch("http://https://megamarto-backend.onrender.com/admin/orders", {
         headers: { Authorization: `Bearer ${token}` },
       });
 

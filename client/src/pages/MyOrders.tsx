@@ -59,7 +59,7 @@ function MyOrders() {
           return;
         }
 
-        const res = await fetch("http://localhost:5000/orders", {
+        const res = await fetch("http://https://megamarto-backend.onrender.com/orders", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

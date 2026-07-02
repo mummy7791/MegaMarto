@@ -51,7 +51,7 @@ function OrderTracking() {
         };
       }
 
-      const res = await fetch(`http://https://megamarto-backend.onrender.com/orders/${orderId}`, {
+      const res = await fetch(`https://megamarto-backend.onrender.com/orders/${orderId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

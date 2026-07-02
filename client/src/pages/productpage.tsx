@@ -21,7 +21,7 @@ function ProductsPage() {
   // ✅ FETCH PRODUCTS (safe + stable)
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch("http://https://megamarto-backend.onrender.com/products", {
+      const res = await fetch("https://megamarto-backend.onrender.com/products", {
         headers: {
           Authorization: `Bearer ${tokenRef.current}`,
         },
@@ -51,7 +51,7 @@ function ProductsPage() {
   // ❌ DELETE PRODUCT
   const deleteProduct = async (id: string) => {
     try {
-      await fetch(`http://https://megamarto-backend.onrender.com/products/${id}`, {
+      await fetch(`https://megamarto-backend.onrender.com/products/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${tokenRef.current}`,
@@ -69,7 +69,7 @@ function ProductsPage() {
     if (!editing) return;
 
     try {
-      await fetch(`http://https://megamarto-backend.onrender.com/products/${editing._id}`, {
+      await fetch(`https://megamarto-backend.onrender.com/products/${editing._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

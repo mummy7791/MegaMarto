@@ -53,7 +53,7 @@ function AdminOrders() {
         return;
       }
 
-      const res = await fetch("http://https://megamarto-backend.onrender.com/admin/orders", {
+      const res = await fetch("https://megamarto-backend.onrender.com/admin/orders", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -86,7 +86,7 @@ function AdminOrders() {
         return;
       }
 
-      const res = await fetch("http://https://megamarto-backend.onrender.com/admin/delivery-boys", {
+      const res = await fetch("https://megamarto-backend.onrender.com/admin/delivery-boys", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -125,7 +125,7 @@ function AdminOrders() {
         return;
       }
 
-      const res = await fetch(`http://https://megamarto-backend.onrender.com/admin/orders/${id}`, {
+      const res = await fetch(`https://megamarto-backend.onrender.com/admin/orders/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -165,7 +165,7 @@ function AdminOrders() {
       }
 
       const res = await fetch(
-        `http://https://megamarto-backend.onrender.com/admin/assign-order/${orderId}`,
+        `https://megamarto-backend.onrender.com/admin/assign-order/${orderId}`,
         {
           method: "PUT",
           headers: {

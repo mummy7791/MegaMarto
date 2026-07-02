@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 import "./DeliveryDashboard.css";
 
-const API = "http://https://megamarto-backend.onrender.com";
+const API = "https://megamarto-backend.onrender.com";
 
 const socket = io(API, {
   autoConnect: false,

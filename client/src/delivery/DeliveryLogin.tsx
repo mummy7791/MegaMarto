@@ -31,7 +31,7 @@ export default function DeliveryLogin() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://https://megamarto-backend.onrender.com/delivery/delivery-login", {
+      const res = await fetch("https://megamarto-backend.onrender.com/delivery/delivery-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

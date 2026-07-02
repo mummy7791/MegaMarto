@@ -272,7 +272,7 @@ function Checkout() {
       return;
     }
 
-    const res = await fetch("http://https://megamarto-backend.onrender.com/orders", {
+    const res = await fetch("https://megamarto-backend.onrender.com/orders", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -335,7 +335,7 @@ function Checkout() {
         return;
       }
 
-      const orderRes = await fetch("http://https://megamarto-backend.onrender.com/payment/create-order", {
+      const orderRes = await fetch("https://megamarto-backend.onrender.com/payment/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -387,7 +387,7 @@ function Checkout() {
         },
 
         handler: async (response: RazorpayResponse) => {
-          const verifyRes = await fetch("http://https://megamarto-backend.onrender.com/payment/verify", {
+          const verifyRes = await fetch("https://megamarto-backend.onrender.com/payment/verify", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

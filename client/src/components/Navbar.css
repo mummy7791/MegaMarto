@@ -1,104 +1,59 @@
-/* ================= NAVBAR ================= */
-
 .navbar {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
+  gap: 12px;
+  padding: 12px 18px;
   background: #0f172a;
   color: white;
   position: sticky;
   top: 0;
   z-index: 9999;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .logo {
   font-size: 22px;
-  font-weight: bold;
+  font-weight: 800;
   cursor: pointer;
+  flex-shrink: 0;
 }
-
-.logo:hover {
-  color: #38bdf8;
-}
-
-/* ================= LINKS ================= */
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.nav-links a {
+.nav-links a,
+.nav-links button {
   text-decoration: none;
   color: white;
-  font-weight: 600;
-  transition: 0.3s;
-}
-
-.nav-links a:hover {
-  color: #38bdf8;
-}
-
-/* ================= BUTTONS ================= */
-
-.login-btn,
-.register-btn,
-.admin-btn,
-.delivery-btn {
+  font-weight: 700;
   border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  border-radius: 12px;
+  padding: 10px 14px;
 }
 
 .login-btn {
   background: transparent;
-  color: white;
 }
 
-.register-btn {
-  background: #00c6ff;
-  color: black;
-}
-
-.admin-btn {
-  background: gold;
-  color: black;
-}
-
-.delivery-btn {
-  background: #22c55e;
-  color: white;
-}
-
-.logout-btn {
-  padding: 8px 14px;
-  border: none;
-  background: red;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-/* ================= ACTIVE LINK ================= */
-
+.register-btn,
 .active {
   background: #00c6ff;
   color: black !important;
-  padding: 8px 12px;
-  border-radius: 8px;
 }
-
-/* ================= CART ================= */
 
 .cart-wrapper {
   position: relative;
-  cursor: pointer;
   font-size: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .cart-badge {
@@ -110,29 +65,22 @@
   border-radius: 50%;
   min-width: 18px;
   height: 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-size: 11px;
-  font-weight: bold;
+  display: grid;
+  place-items: center;
 }
-
-/* ================= PROFILE ================= */
 
 .profile-wrapper {
   position: relative;
+  flex-shrink: 0;
 }
 
 .profile-btn {
   background: transparent;
   color: white;
   border: none;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 15px;
+  font-weight: 700;
 }
-
-/* ================= DROPDOWN ================= */
 
 .dropdown-menu {
   position: absolute;
@@ -151,40 +99,29 @@
   padding: 14px 16px;
   cursor: pointer;
   font-weight: 600;
-  transition: 0.3s;
-}
-
-.dropdown-item:hover {
-  background: #f3f4f6;
 }
 
 .dropdown-danger {
   color: red;
-  font-weight: bold;
 }
 
-.dropdown-danger:hover {
-  background: #fee2e2;
-}
-
-/* ================= MOBILE ================= */
-
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .navbar {
-    padding: 12px;
-    flex-wrap: wrap;
-  }
-
-  .nav-links {
+    padding: 10px;
     gap: 8px;
-    flex-wrap: wrap;
   }
 
   .logo {
     font-size: 18px;
   }
 
-  .dropdown-menu {
-    width: 180px;
+  .nav-links {
+    gap: 8px;
+  }
+
+  .nav-links a,
+  .nav-links button {
+    font-size: 14px;
+    padding: 9px 12px;
   }
 }

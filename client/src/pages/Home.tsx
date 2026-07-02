@@ -18,7 +18,7 @@ type SavedLocation = {
   displayName?: string;
 };
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://megamarto-backend.onrender.com";
 
 const topTabs = [
   { name: "All", icon: "🛍️" },

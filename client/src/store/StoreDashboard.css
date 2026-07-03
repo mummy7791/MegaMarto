@@ -199,3 +199,26 @@
   align-items: center;
   font-weight: 900;
 }
+.store-image-upload {
+  min-height: 58px;
+  border: 2px dashed #7c3aed;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: #7c3aed;
+  background: #faf5ff;
+  cursor: pointer;
+}
+
+.store-image-upload input {
+  display: none;
+}
+
+.store-image-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+}

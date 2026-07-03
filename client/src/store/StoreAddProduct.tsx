@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import "./admin.css";
+import "./StoreDashboard.css";
 
 type Product = {
   _id: string;
@@ -13,7 +13,7 @@ type Product = {
 
 const API = "https://megamarto-backend.onrender.com";
 
-export default function AddProduct() {
+export default function StoreAddProduct() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +25,7 @@ export default function AddProduct() {
     stock: "10",
   });
 
-  const token = localStorage.getItem("adminToken") || "";
+  const token = localStorage.getItem("storeToken") || "";
 
   const loadProducts = async () => {
     try {
@@ -38,12 +38,12 @@ export default function AddProduct() {
   };
 
   useEffect(() => {
-  const timer = setTimeout(() => {
-    loadProducts();
-  }, 0);
+    const timer = setTimeout(() => {
+      loadProducts();
+    }, 0);
 
-  return () => clearTimeout(timer);
-}, []);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -116,36 +116,11 @@ export default function AddProduct() {
     }
   };
 
-  const deleteProduct = async (id: string) => {
-    if (!window.confirm("Delete this product?")) return;
-
-    try {
-      const res = await fetch(`${API}/products/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Delete failed");
-        return;
-      }
-
-      toast.success("Product deleted");
-      loadProducts();
-    } catch {
-      toast.error("Server error");
-    }
-  };
-
   return (
-    <div className="admin-page">
-      <h1>➕ Add Product</h1>
+    <div className="store-page">
+      <h1>🏪 Store Add Product</h1>
 
-      <div className="product-form">
+      <div className="store-product-form">
         <input
           placeholder="Product Name"
           value={form.name}
@@ -159,13 +134,13 @@ export default function AddProduct() {
           onChange={(e) => setForm({ ...form, price: e.target.value })}
         />
 
-        <label className="image-upload-box">
+        <label className="store-image-upload">
           📷 Choose Image
           <input type="file" accept="image/*" onChange={handleImageUpload} />
         </label>
 
         {form.image && (
-          <img className="image-preview" src={form.image} alt="Preview" />
+          <img className="store-image-preview" src={form.image} alt="Preview" />
         )}
 
         <select
@@ -194,19 +169,16 @@ export default function AddProduct() {
         </button>
       </div>
 
-      <h2>My Products</h2>
+      <h2>All Products</h2>
 
-      <div className="admin-product-grid">
+      <div className="store-products-grid">
         {products.map((p) => (
-          <div className="admin-product-card" key={p._id}>
+          <div className="store-product-card" key={p._id}>
             <img src={p.image} alt={p.name} />
-
             <h3>{p.name}</h3>
             <b>{p.category}</b>
             <p>₹{p.price}</p>
             <p>Stock: {p.stock}</p>
-
-            <button onClick={() => deleteProduct(p._id)}>Delete</button>
           </div>
         ))}
       </div>

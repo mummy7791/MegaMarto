@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import "./StoreDashboard.css";
@@ -50,6 +51,8 @@ type Order = {
 type Tab = "products" | "orders" | "notifications";
 
 export default function StoreDashboard() {
+  const navigate = useNavigate();
+
   const [tab, setTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -66,7 +69,11 @@ export default function StoreDashboard() {
   const token = localStorage.getItem("storeToken") || "";
 
   const storeUser = useMemo(() => {
-    return JSON.parse(localStorage.getItem("storeUser") || "{}");
+    try {
+      return JSON.parse(localStorage.getItem("storeUser") || "{}");
+    } catch {
+      return {};
+    }
   }, []);
 
   const checkToken = useCallback(() => {
@@ -167,46 +174,75 @@ export default function StoreDashboard() {
     };
   }, [loadOrders, loadProducts, storeUser?._id]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select image only");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      setForm((prev) => ({
+        ...prev,
+        image: reader.result as string,
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   const addProduct = async () => {
     if (!checkToken()) return;
 
-    if (!form.name || !form.price || !form.category) {
-      toast.error("Please fill product details");
+    if (!form.name || !form.price || !form.image || !form.category || !form.stock) {
+      toast.error("Please fill all product details");
       return;
     }
 
-    const res = await fetch(`${API}/store/products`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-        stock: Number(form.stock),
-      }),
-    });
+    try {
+      const res = await fetch(`${API}/store/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          price: Number(form.price),
+          image: form.image,
+          category: form.category,
+          stock: Number(form.stock),
+          description: form.description,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      toast.error(data.message || "Product add failed");
-      return;
+      if (!res.ok) {
+        toast.error(data.message || "Product add failed");
+        return;
+      }
+
+      toast.success("Product added ✅");
+
+      setForm({
+        name: "",
+        price: "",
+        image: "",
+        category: "Grocery",
+        stock: "10",
+        description: "",
+      });
+
+      await loadProducts();
+    } catch {
+      toast.error("Server error");
     }
-
-    toast.success("Product added ✅");
-
-    setForm({
-      name: "",
-      price: "",
-      image: "",
-      category: "Grocery",
-      stock: "10",
-      description: "",
-    });
-
-    await loadProducts();
   };
 
   const deleteProduct = async (id: string) => {
@@ -241,7 +277,7 @@ export default function StoreDashboard() {
       return;
     }
 
-    toast.success("Order accepted ✅ Waiting for delivery boy");
+    toast.success("Order accepted ✅");
     await loadOrders();
   };
 
@@ -312,6 +348,10 @@ export default function StoreDashboard() {
           🔔 Notifications
         </button>
 
+        <button onClick={() => navigate("/store-add-product")}>
+          ➕ Add Product Page
+        </button>
+
         <button className="logout" onClick={logout}>
           Logout
         </button>
@@ -362,19 +402,29 @@ export default function StoreDashboard() {
 
                 <input
                   placeholder="Price"
+                  type="number"
                   value={form.price}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, price: e.target.value }))
                   }
                 />
 
-                <input
-                  placeholder="Image URL"
-                  value={form.image}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, image: e.target.value }))
-                  }
-                />
+                <label className="store-image-upload">
+                  📷 Choose Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </label>
+
+                {form.image && (
+                  <img
+                    className="store-image-preview"
+                    src={form.image}
+                    alt="Preview"
+                  />
+                )}
 
                 <select
                   value={form.category}
@@ -382,17 +432,19 @@ export default function StoreDashboard() {
                     setForm((p) => ({ ...p, category: e.target.value }))
                   }
                 >
+                  <option>Grocery</option>
                   <option>Fruits</option>
                   <option>Dairy</option>
                   <option>Snacks</option>
-                  <option>Grocery</option>
                   <option>Fresh</option>
                   <option>Beauty</option>
                   <option>Home</option>
+                  <option>Electronics</option>
                 </select>
 
                 <input
                   placeholder="Stock"
+                  type="number"
                   value={form.stock}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, stock: e.target.value }))
@@ -444,8 +496,7 @@ export default function StoreDashboard() {
                   <p><b>Total:</b> ₹{order.total}</p>
                   <p><b>Status:</b> {order.status.replaceAll("_", " ")}</p>
                   <p>
-                    <b>Payment:</b> {order.paymentMethod} /{" "}
-                    {order.paymentStatus}
+                    <b>Payment:</b> {order.paymentMethod} / {order.paymentStatus}
                   </p>
 
                   <h4>Items</h4>

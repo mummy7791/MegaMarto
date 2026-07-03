@@ -294,16 +294,72 @@ function Home() {
       </section>
 
       <footer className="mm-footer">
-        <h2>MegaMarto</h2>
-        <p>Fresh groceries, daily essentials and fast delivery.</p>
+  <h2>MegaMarto</h2>
+  <p>Fresh groceries, daily essentials and fast delivery.</p>
 
-        <div>
-          <span>🚀 10 Min Delivery</span>
-          <span>🔐 Safe Payments</span>
-          <span>⭐ Best Quality</span>
-          <span>💰 Best Prices</span>
-        </div>
-      </footer>
+  <div className="mm-footer-benefits">
+    <span>🚀 10 Min Delivery</span>
+    <span>🔐 Safe Payments</span>
+    <span>⭐ Best Quality</span>
+    <span>💰 Best Prices</span>
+  </div>
+
+  <div className="mm-footer-searches">
+    <h3>Trending Searches</h3>
+    <p>
+      <b>Categories :</b> Ice Creams | Fans & Coolers | Talcom Powder |
+      Mosquito Nets | Sunscreen | Ice Cream Cake | Cold Beverages | Sunglasses
+    </p>
+    <p>
+      <b>Products :</b> Bajaj Table Fan | OnePlus 13R | Coconut Water | Diet
+      Coke | Masala Chaas | Amul Rabdi | Lahori Jeera | Ice Cube
+    </p>
+    <p>
+      <b>Brands :</b> Rasna | Dermi Cool | Decathlon | Kwality Walls | Vincent
+      Chase By Lenskart
+    </p>
+
+    <h3>Popular Searches</h3>
+    <p>
+      <b>Products :</b> Avocado | Strawberry | Pomegranate | Beetroot | Potato |
+      Lemon | Papaya | Jeera | Mushroom | Lettuce
+    </p>
+    <p>
+      <b>Brands :</b> Yakult | Aashirvaad Atta | Too Yumm | Lays | Amul |
+      Fortune Oil | Mother Dairy | Nandini Milk
+    </p>
+    <p>
+      <b>Categories :</b> Grocery | Chips | Curd | Eggs | Cheese | Fruits |
+      Vegetables | Paneer
+    </p>
+  </div>
+
+  <div className="mm-footer-categories">
+    <h3>Categories</h3>
+    <div>
+      {[
+        "Fruits & Vegetables",
+        "Atta, Rice, Oil & Dals",
+        "Masala & Dry Fruits",
+        "Sweet Cravings",
+        "Frozen Food & Ice Creams",
+        "Baby Food",
+        "Dairy, Bread & Eggs",
+        "Cold Drinks & Juices",
+        "Snacks",
+        "Tea, Coffee & More",
+        "Biscuits",
+        "Makeup & Beauty",
+        "Cleaning Essentials",
+        "Home Needs",
+        "Health & Baby Care",
+        "Paan Corner",
+      ].map((item) => (
+        <span key={item}>{item}</span>
+      ))}
+    </div>
+  </div>
+</footer>
 
       {cartCount > 0 && (
         <button className="mm-floating-cart" onClick={() => navigate("/cart")}>

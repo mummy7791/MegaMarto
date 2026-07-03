@@ -3,7 +3,14 @@ const Order = require("../models/Order");
 /* ================= PLACE ORDER ================= */
 exports.placeOrder = async (req, res) => {
   try {
-    const { items, total, address, location } = req.body; // ✅ ADDED
+    const {
+      items,
+      total,
+      address,
+      location,
+      storeId,
+      storeName,
+    } = req.body;
 
     if (!items || !total || !address) {
       return res.status(400).json({
@@ -11,53 +18,90 @@ exports.placeOrder = async (req, res) => {
       });
     }
 
+    // 💰 Commission Calculation
+    const commissionPercent = 10; // 10%
+    const adminCommission = Number(
+      ((total * commissionPercent) / 100).toFixed(2)
+    );
+
+    const storeAmount = Number(
+      (total - adminCommission).toFixed(2)
+    );
+
     const order = await Order.create({
       items,
       total,
       address,
-      location, // ✅ SAVE LOCATION
+      location,
       userId: req.user.id,
+
+      // 🏪 Store
+      storeId: storeId || null,
+      storeName: storeName || "",
+
+      // 💰 Settlement
+      commissionPercent,
+      adminCommission,
+      storeAmount,
+      settlementStatus: "PENDING",
+
       status: "PLACED",
     });
 
-    res.status(201).json(order);
+    res.status(201).json({
+      message: "Order placed successfully",
+      order,
+    });
   } catch (err) {
     console.log("PLACE ORDER ERROR:", err);
-    res.status(500).json({ message: "Order failed" });
+    res.status(500).json({
+      message: "Order failed",
+    });
   }
 };
 
 /* ================= GET USER ORDERS ================= */
 exports.getUserOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user.id }).sort({
+    const orders = await Order.find({
+      userId: req.user.id,
+    }).sort({
       createdAt: -1,
     });
 
     res.json(orders);
   } catch (err) {
     console.log("GET ORDERS ERROR:", err);
-    res.status(500).json({ message: "Error fetching orders" });
+    res.status(500).json({
+      message: "Error fetching orders",
+    });
   }
 };
 
-/* ================= GET SINGLE ORDER (TRACK ORDER) ================= */
+/* ================= GET SINGLE ORDER ================= */
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id)
+      .populate("storeId", "storeName")
+      .populate("deliveryBoy", "name phone bikeNumber");
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res.status(404).json({
+        message: "Order not found",
+      });
     }
 
-    // 🔐 SECURITY
     if (order.userId !== req.user.id) {
-      return res.status(403).json({ message: "Access denied" });
+      return res.status(403).json({
+        message: "Access denied",
+      });
     }
 
     res.json(order);
   } catch (err) {
     console.log("TRACK ORDER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };

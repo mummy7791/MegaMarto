@@ -26,6 +26,12 @@ const orderItemSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    storeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      default: null,
+    },
   },
   { _id: false }
 );
@@ -93,6 +99,33 @@ const orderSchema = new mongoose.Schema(
       default: "PENDING",
     },
 
+    /* 💰 SETTLEMENT */
+    commissionPercent: {
+      type: Number,
+      default: 10,
+    },
+
+    adminCommission: {
+      type: Number,
+      default: 0,
+    },
+
+    storeAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    settlementStatus: {
+      type: String,
+      enum: ["PENDING", "PAID"],
+      default: "PENDING",
+    },
+
+    settledAt: {
+      type: Date,
+      default: null,
+    },
+
     /* 🌍 USER LOCATION */
     location: {
       type: locationSchema,
@@ -129,25 +162,19 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "PLACED",
-
         "STORE_PENDING",
         "STORE_ACCEPTED",
         "STORE_CANCELLED",
-
         "ASSIGNED",
-
         "DELIVERY_ACCEPTED",
         "PICKED_UP",
         "OUT_FOR_DELIVERY",
-
         "DELIVERED",
       ],
       default: "PLACED",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Order", orderSchema);

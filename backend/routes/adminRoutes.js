@@ -34,6 +34,14 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
     const deliveryBoys = await DeliveryBoy.find();
 
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const adminCommission = orders.reduce(
+      (sum, o) => sum + (o.adminCommission || 0),
+      0
+    );
+    const storeAmount = orders.reduce((sum, o) => sum + (o.storeAmount || 0), 0);
+    const pendingSettlement = orders
+      .filter((o) => o.settlementStatus === "PENDING")
+      .reduce((sum, o) => sum + (o.storeAmount || 0), 0);
 
     res.json({
       orders: orders.length,
@@ -42,62 +50,15 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
       stores: stores.length,
       deliveryBoys: deliveryBoys.length,
       totalRevenue,
+      adminCommission,
+      storeAmount,
+      pendingSettlement,
     });
   } catch (err) {
     console.log("STATS ERROR:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-/* =======================================================
-   🏪 CREATE STORE
-======================================================= */
-router.post("/stores", auth, adminOnly, async (req, res) => {
-  try {
-    const { storeName, ownerName, email, password, phone, address } = req.body;
-
-    if (!storeName || !ownerName || !email || !password || !phone || !address) {
-      return res.status(400).json({ message: "All fields required" });
-    }
-
-    const exists = await Store.findOne({ email });
-
-    if (exists) {
-      return res.status(400).json({ message: "Store email already exists" });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    const store = await Store.create({
-      storeName,
-      ownerName,
-      email,
-      password: hashed,
-      phone,
-      address,
-      role: "store",
-      status: "active",
-    });
-
-    res.status(201).json({
-      message: "Store created successfully",
-      store: {
-        _id: store._id,
-        storeName: store.storeName,
-        ownerName: store.ownerName,
-        email: store.email,
-        phone: store.phone,
-        address: store.address,
-        status: store.status,
-        role: store.role,
-      },
-    });
-  } catch (err) {
-    console.log("CREATE STORE ERROR:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 /* =======================================================
    🏪 GET ALL STORES
 ======================================================= */
@@ -207,6 +168,7 @@ router.put("/products/:id", auth, adminOnly, async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
+
 
     if (global.io) {
       global.io.emit("productUpdated", product);
@@ -429,5 +391,79 @@ router.put("/delivery-status/:id", auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+/* =======================================================
+   💰 STORE SETTLEMENT SUMMARY
+======================================================= */
+router.get("/settlements", auth, adminOnly, async (req, res) => {
+  try {
+    const stores = await Store.find().select("-password");
 
+    const result = await Promise.all(
+      stores.map(async (store) => {
+        const orders = await Order.find({ storeId: store._id });
+
+        const totalSales = orders.reduce((s, o) => s + (o.total || 0), 0);
+        const adminCommission = orders.reduce(
+          (s, o) => s + (o.adminCommission || 0),
+          0
+        );
+        const storeAmount = orders.reduce((s, o) => s + (o.storeAmount || 0), 0);
+        const pendingAmount = orders
+          .filter((o) => o.settlementStatus === "PENDING")
+          .reduce((s, o) => s + (o.storeAmount || 0), 0);
+        const paidAmount = orders
+          .filter((o) => o.settlementStatus === "PAID")
+          .reduce((s, o) => s + (o.storeAmount || 0), 0);
+
+        return {
+          storeId: store._id,
+          storeName: store.storeName,
+          ownerName: store.ownerName,
+          phone: store.phone,
+          totalOrders: orders.length,
+          totalSales,
+          adminCommission,
+          storeAmount,
+          pendingAmount,
+          paidAmount,
+        };
+      })
+    );
+
+    res.json(result);
+  } catch (err) {
+    console.log("SETTLEMENTS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/* =======================================================
+   ✅ MARK STORE SETTLEMENT AS PAID
+======================================================= */
+router.put("/settlements/:storeId/pay", auth, adminOnly, async (req, res) => {
+  try {
+    const storeId = req.params.storeId;
+
+    const result = await Order.updateMany(
+      {
+        storeId,
+        settlementStatus: "PENDING",
+      },
+      {
+        $set: {
+          settlementStatus: "PAID",
+          settledAt: new Date(),
+        },
+      }
+    );
+
+    res.json({
+      message: "Settlement marked as paid",
+      updated: result.modifiedCount,
+    });
+  } catch (err) {
+    console.log("SETTLEMENT PAY ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;

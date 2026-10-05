@@ -180,7 +180,12 @@ router.put("/delivery-status/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    if (status === "PICKED_UP" && order.status !== "DELIVERY_ACCEPTED") return res.status(400).json({ message: "Accept the order before pickup" });
+    if (status === "OUT_FOR_DELIVERY" && order.status !== "PICKED_UP") return res.status(400).json({ message: "Confirm pickup before starting delivery" });
+    if (status === "DELIVERED" && order.status !== "OUT_FOR_DELIVERY") return res.status(400).json({ message: "Order must be out for delivery first" });
+
     order.status = status;
+    if (status === "DELIVERED" && order.paymentMethod === "COD") order.paymentStatus = "PAID";
     await order.save();
 
     const updatedOrder = await Order.findById(order._id)

@@ -9,6 +9,10 @@ type Product = {
   image: string;
   category: string;
   qty?: number;
+  mrp?: number;
+  unit?: string;
+  stock?: number;
+  rating?: number;
 };
 
 const API_URL = "https://megamarto-backend.onrender.com";

@@ -151,9 +151,17 @@ function Navbar() {
           </span>
         </button>
 
-        <button className="mm-location-pill" onClick={() => goTo("/")}>
+        <button
+          className="mm-location-pill"
+          onClick={requestLocation}
+          disabled={locationLoading}
+          aria-label="Use current delivery location"
+        >
           <MapPin size={18} />
-          <span><small>Deliver to</small><b>Your location</b></span>
+          <span>
+            <small>Deliver to</small>
+            <b>{locationLoading ? "Locating..." : deliveryLocation}</b>
+          </span>
         </button>
 
         <div className="mm-search">

@@ -34,7 +34,7 @@ function Navbar() {
   const location = useLocation();
   const [cartCount, setCartCount] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);\n  const [deliveryLocation, setDeliveryLocation] = useState("Your location");\n  const [locationLoading, setLocationLoading] = useState(false);
 
   const isCustomerAuth = isValidToken(localStorage.getItem("customerToken"));
   const customerUser = getUserFromStorage("customerUser");
@@ -57,6 +57,65 @@ function Navbar() {
       window.removeEventListener("cartUpdated", updateCart);
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("userLocation");
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed?.displayName) setDeliveryLocation(parsed.displayName);
+      else if (parsed?.lat && parsed?.lng) setDeliveryLocation(`${Number(parsed.lat).toFixed(3)}, ${Number(parsed.lng).toFixed(3)}`);
+    } catch {
+      // Ignore old non-JSON location values.
+    }
+  }, []);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Location is not supported by this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const data = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          displayName: `${position.coords.latitude.toFixed(3)}, ${position.coords.longitude.toFixed(3)}`,
+        };
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${data.lat}&lon=${data.lng}`
+          );
+          if (response.ok) {
+            const place = await response.json();
+            const a = place?.address || {};
+            data.displayName =
+              a.suburb || a.neighbourhood || a.village || a.town || a.city || a.county || data.displayName;
+          }
+        } catch {
+          // Coordinates are still valid if reverse geocoding is unavailable.
+        }
+
+        localStorage.setItem("userLocation", JSON.stringify(data));
+        setDeliveryLocation(data.displayName);
+        setLocationLoading(false);
+        window.dispatchEvent(new Event("locationUpdated"));
+      },
+      (error) => {
+        setLocationLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          alert("Location permission was denied. Please allow Location for MegaMarto in your browser and try again.");
+        } else {
+          alert("Unable to get your current location. Please try again.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  };
 
   const goTo = (path: string) => {
     setProfileOpen(false);

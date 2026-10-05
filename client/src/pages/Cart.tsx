@@ -9,6 +9,9 @@ type Product = {
   price: number;
   image: string;
   qty?: number;
+  mrp?: number;
+  unit?: string;
+  stock?: number;
 };
 
 const getInitialCart = (): Product[] => {
@@ -47,7 +50,7 @@ function Cart() {
   const increaseQty = (id: string) => {
     const updated = cart.map((item) =>
       getItemId(item) === id
-        ? { ...item, qty: (item.qty || 0) + 1 }
+        ? { ...item, qty: typeof item.stock === "number" ? Math.min((item.qty || 0) + 1, item.stock) : (item.qty || 0) + 1 }
         : item
     );
 
@@ -91,21 +94,28 @@ function Cart() {
     0
   );
 
-  const deliveryFee = getDeliveryFee(distance);
+  const mrpTotal = cart.reduce((sum, item) => sum + ((item.mrp && item.mrp > item.price ? item.mrp : item.price) * (item.qty || 0)), 0);
+  const mrpSavings = Math.max(mrpTotal - itemTotal, 0);
+  const freeDeliveryGap = Math.max(499 - itemTotal, 0);
+  const deliveryFee = itemTotal >= 499 ? 0 : getDeliveryFee(distance);
   const handlingFee = Math.round(itemTotal * 0.03);
   const total = Math.max(itemTotal + deliveryFee + handlingFee - discount, 0);
-  const savings = Math.round(total * 0.15) + discount;
+  const savings = mrpSavings + discount;
 
   return (
     <div className="zepto-cart">
       <div className="cart-header">
-        <h2>🛒 MegaMarto Cart</h2>
+        <div><span className="cart-kicker">⚡ Delivery in 10–20 mins</span><h2>Your Cart</h2><p>{cart.length} products ready for checkout</p></div>
       </div>
 
       {cart.length > 0 && (
-        <div className="save-box">
-          Yay! You saved ₹{savings} on this order 🎉
-        </div>
+        <>
+          <div className="save-box">🎉 You save ₹{savings} on this order</div>
+          <div className="delivery-progress">
+            <div><b>{freeDeliveryGap === 0 ? "Free delivery unlocked!" : `Add ₹${freeDeliveryGap} more for free delivery`}</b><span>{freeDeliveryGap === 0 ? "Your delivery fee is on us." : "Free delivery on ₹499+ cart value"}</span></div>
+            <div className="progress-track"><span style={{ width: `${Math.min((itemTotal / 499) * 100, 100)}%` }} /></div>
+          </div>
+        </>
       )}
 
       {cart.length === 0 ? (
@@ -126,8 +136,7 @@ function Cart() {
                 />
 
                 <div className="cart-info">
-                  <h4>{item.name}</h4>
-                  <p>₹{item.price}</p>
+                  <h4>{item.name}</h4><small>{item.unit || "1 pack"}</small><p>₹{item.price} {item.mrp && item.mrp > item.price ? <del>₹{item.mrp}</del> : null}</p>
 
                   <div className="qty-box">
                     <button onClick={() => decreaseQty(itemId)}>-</button>
@@ -169,7 +178,7 @@ function Cart() {
 
             <div className="bill-row">
               <span>Delivery Fee ({distance} KM)</span>
-              <b>₹{deliveryFee}</b>
+              <b>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</b>
             </div>
 
             <div className="bill-row">
@@ -197,7 +206,7 @@ function Cart() {
 
             <div className="saving-row">
               <span>Discount on MRP</span>
-              <b>₹{savings}</b>
+              <b>₹{mrpSavings}</b>
             </div>
 
             <div className="saving-row">
@@ -215,7 +224,7 @@ function Cart() {
             className="checkout-btn"
             onClick={() => navigate("/checkout")}
           >
-            Add Address To Proceed
+            Proceed to checkout →
           </button>
         </>
       )}

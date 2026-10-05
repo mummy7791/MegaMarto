@@ -1,321 +1,40 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import "./OrderTracking.css";
 
-type OrderStatus =
-  | "PLACED"
-  | "CONFIRMED"
-  | "ASSIGNED"
-  | "SHIPPED"
-  | "OUT_FOR_DELIVERY"
-  | "DELIVERED";
-
+type OrderStatus = "PLACED"|"STORE_PENDING"|"CONFIRMED"|"ASSIGNED"|"SHIPPED"|"OUT_FOR_DELIVERY"|"DELIVERED"|"CANCELLED";
 type Order = {
-  _id: string;
-  total: number;
-  status: OrderStatus;
-  createdAt?: string;
-  address?: {
-    name?: string;
-    city?: string;
-    street?: string;
-    pincode?: string;
-  };
+  _id:string; total:number; status:OrderStatus; createdAt?:string; paymentMethod?:string; paymentStatus?:string;
+  address?:{name?:string;phone?:string;city?:string;street?:string;pincode?:string};
+  items?:{name:string;qty:number;price:number;image?:string}[];
 };
+const steps=[["PLACED","Order placed","We received your order"],["CONFIRMED","Order confirmed","Store is preparing your items"],["ASSIGNED","Partner assigned","Delivery partner has been assigned"],["OUT_FOR_DELIVERY","Out for delivery","Your order is on the way"],["DELIVERED","Delivered","Order delivered successfully"]] as const;
+const normalized=(s:OrderStatus)=>s==="STORE_PENDING"?"PLACED":s==="SHIPPED"?"OUT_FOR_DELIVERY":s;
 
-const steps: OrderStatus[] = [
-  "PLACED",
-  "CONFIRMED",
-  "ASSIGNED",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-];
-
-function OrderTracking() {
-  const { id } = useParams<{ id: string }>();
-
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState<boolean>(!!id);
-  const [error, setError] = useState<string>(id ? "" : "Invalid order ID");
-  const [secondsLeft, setSecondsLeft] = useState(600);
-
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fetchOrder = async (orderId: string) => {
-    try {
-      const token = localStorage.getItem("customerToken");
-
-      if (!token || token === "undefined" || token === "null") {
-        return {
-          order: null,
-          error: "Please login again",
-        };
-      }
-
-      const res = await fetch(`https://megamarto-backend.onrender.com/orders/${orderId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        return {
-          order: null,
-          error: data?.message || "Failed to load order",
-        };
-      }
-
-      return {
-        order: data as Order,
-        error: "",
-      };
-    } catch (err) {
-      console.log("ORDER TRACKING ERROR:", err);
-
-      return {
-        order: null,
-        error: "Server error",
-      };
-    }
-  };
-
-  useEffect(() => {
-    if (!id) return;
-
-    let ignore = false;
-
-    const loadOrder = async () => {
-      const result = await fetchOrder(id);
-
-      if (ignore) return;
-
-      setOrder(result.order);
-      setError(result.error);
-      setLoading(false);
-
-      if (result.order?.createdAt) {
-        const createdTime = new Date(result.order.createdAt).getTime();
-        const now = Date.now();
-        const elapsed = Math.floor((now - createdTime) / 1000);
-        const remaining = Math.max(600 - elapsed, 0);
-        setSecondsLeft(remaining);
-      }
-    };
-
-    loadOrder();
-
-    intervalRef.current = setInterval(loadOrder, 5000);
-
-    return () => {
-      ignore = true;
-
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [id]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => Math.max(prev - 1, 0));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const getProgress = (status: OrderStatus) => {
-    const index = steps.indexOf(status);
-    return index >= 0 ? ((index + 1) / steps.length) * 100 : 0;
-  };
-
-  const formatTime = (seconds: number) => {
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return `${min}:${sec < 10 ? "0" : ""}${sec}`;
-  };
-
-  if (loading) {
-    return <div style={{ padding: 30 }}>Loading Order...</div>;
-  }
-
-  if (error) {
-    return <div style={{ padding: 30, color: "red" }}>{error}</div>;
-  }
-
-  if (!order) {
-    return <div style={{ padding: 30 }}>Order Not Found</div>;
-  }
-
-  const currentIndex = steps.indexOf(order.status);
-  const orderProgress = getProgress(order.status);
-  const timeProgress = ((600 - secondsLeft) / 600) * 100;
-
-  return (
-    <div
-      style={{
-        maxWidth: "900px",
-        margin: "30px auto",
-        background: "#f8fafc",
-        padding: "25px",
-        borderRadius: "24px",
-        fontFamily: "Outfit, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          background: "linear-gradient(135deg, #7e22ce, #a855f7)",
-          color: "white",
-          padding: "28px",
-          borderRadius: "24px",
-          marginBottom: "22px",
-          boxShadow: "0 12px 25px rgba(126,34,206,0.25)",
-        }}
-      >
-        <h1 style={{ margin: 0 }}>🚚 Arriving in {formatTime(secondsLeft)}</h1>
-        <p style={{ marginTop: 8 }}>Your MegaMarto order is on the way</p>
-
-        <div
-          style={{
-            height: "12px",
-            background: "rgba(255,255,255,0.3)",
-            borderRadius: "20px",
-            overflow: "hidden",
-            marginTop: "20px",
-          }}
-        >
-          <div
-            style={{
-              width: `${timeProgress}%`,
-              height: "100%",
-              background: "#ffffff",
-              borderRadius: "20px",
-              transition: "0.3s",
-            }}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: "white",
-          padding: "25px",
-          borderRadius: "22px",
-          boxShadow: "0 8px 22px rgba(0,0,0,0.06)",
-        }}
-      >
-        <h2>📦 Track Order</h2>
-
-        <p>
-          <b>Order ID:</b> {order._id}
-        </p>
-
-        <p>
-          <b>Customer:</b> {order.address?.name || "N/A"}
-        </p>
-
-        <p>
-          <b>Address:</b> {order.address?.street || "N/A"},{" "}
-          {order.address?.city || ""}
-        </p>
-
-        <h2>₹{order.total}</h2>
-
-        <p>
-          Status: <b>{order.status.replaceAll("_", " ")}</b>
-        </p>
-
-        <div
-          style={{
-            height: "12px",
-            background: "#e5e7eb",
-            borderRadius: "20px",
-            overflow: "hidden",
-            marginTop: "20px",
-          }}
-        >
-          <div
-            style={{
-              width: `${orderProgress}%`,
-              height: "100%",
-              background: "linear-gradient(90deg,#22c55e,#16a34a)",
-              transition: "0.3s",
-            }}
-          />
-        </div>
-
-        <div style={{ marginTop: 28 }}>
-          {steps.map((step, index) => (
-            <div
-              key={step}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 18,
-              }}
-            >
-              <div
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
-                  background: index <= currentIndex ? "#22c55e" : "#d1d5db",
-                  color: "white",
-                  display: "grid",
-                  placeItems: "center",
-                  marginRight: 12,
-                  fontWeight: 900,
-                }}
-              >
-                {index <= currentIndex ? "✓" : index + 1}
-              </div>
-
-              <div>
-                <b
-                  style={{
-                    color: index <= currentIndex ? "#16a34a" : "#64748b",
-                  }}
-                >
-                  {step.replaceAll("_", " ")}
-                </b>
-                <p style={{ margin: "4px 0 0", fontSize: 13 }}>
-                  {index <= currentIndex ? "Completed" : "Pending"}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <button
-          onClick={async () => {
-            if (!id) return;
-
-            setLoading(true);
-
-            const result = await fetchOrder(id);
-
-            setOrder(result.order);
-            setError(result.error);
-            setLoading(false);
-          }}
-          style={{
-            marginTop: "15px",
-            padding: "12px 20px",
-            background: "#7e22ce",
-            color: "#fff",
-            border: "none",
-            borderRadius: "14px",
-            cursor: "pointer",
-            fontWeight: 900,
-          }}
-        >
-          Refresh Status
-        </button>
-      </div>
-    </div>
-  );
+export default function OrderTracking(){
+ const {id}=useParams<{id:string}>(); const navigate=useNavigate();
+ const [order,setOrder]=useState<Order|null>(null),[loading,setLoading]=useState(!!id),[error,setError]=useState("");
+ const intervalRef=useRef<ReturnType<typeof setInterval>|null>(null);
+ const fetchOrder=async()=>{if(!id)return;try{const token=localStorage.getItem("customerToken");const res=await fetch(`https://megamarto-backend.onrender.com/orders/${id}`,{headers:{Authorization:`Bearer ${token}`}});const data=await res.json();if(!res.ok)throw new Error(data?.message||"Failed to load order");setOrder(data);setError("")}catch(e){setError(e instanceof Error?e.message:"Server error")}finally{setLoading(false)}};
+ useEffect(()=>{fetchOrder();intervalRef.current=setInterval(fetchOrder,5000);return()=>{if(intervalRef.current)clearInterval(intervalRef.current)}},[id]);
+ if(loading)return <div className="ot-state">Loading live order status…</div>;
+ if(error||!order)return <div className="ot-state"><h2>Unable to track order</h2><p>{error||"Order not found"}</p><button onClick={()=>navigate("/orders")}>Back to orders</button></div>;
+ const status=normalized(order.status); const current=Math.max(0,steps.findIndex(([key])=>key===status)); const delivered=status==="DELIVERED";
+ return <main className="ot-page">
+   <button className="ot-back" onClick={()=>navigate("/orders")}>← My orders</button>
+   <section className="ot-hero">
+    <div><span>LIVE ORDER</span><h1>{delivered?"Delivered successfully":"Your order is being prepared"}</h1><p>Order #{order._id.slice(-8).toUpperCase()} · Status refreshes automatically</p></div>
+    <div className="ot-eta"><small>{delivered?"STATUS":"ESTIMATED DELIVERY"}</small><b>{delivered?"Delivered":"10–20 min"}</b></div>
+   </section>
+   <div className="ot-grid">
+    <section className="ot-card">
+      <div className="ot-card-head"><div><span>ORDER JOURNEY</span><h2>Track your delivery</h2></div><button onClick={fetchOrder}>Refresh</button></div>
+      <div className="ot-timeline">{steps.map(([key,title,text],i)=><div className={`ot-step ${i<=current?"done":""} ${i===current?"current":""}`} key={key}><div className="ot-dot">{i<current||delivered?"✓":i+1}</div><div><b>{title}</b><p>{i<current||delivered?"Completed":i===current?text:"Pending"}</p></div></div>)}</div>
+    </section>
+    <aside>
+      <section className="ot-card ot-summary"><span>ORDER SUMMARY</span><h2>₹{order.total}</h2><div><small>Payment</small><b>{order.paymentMethod||"COD"} · {order.paymentStatus||"PENDING"}</b></div><div><small>Items</small><b>{order.items?.reduce((n,x)=>n+x.qty,0)||0} items</b></div></section>
+      <section className="ot-card ot-address"><span>DELIVERING TO</span><h3>{order.address?.name||"Customer"}</h3><p>{order.address?.street}{order.address?.city?", "+order.address.city:""}{order.address?.pincode?" - "+order.address.pincode:""}</p>{order.address?.phone&&<small>📞 {order.address.phone}</small>}</section>
+    </aside>
+   </div>
+ </main>;
 }
-
-export default OrderTracking;

@@ -193,9 +193,22 @@ app.post("/payment/verify", (req, res) => {
 // GET PRODUCTS FOR USER WEBSITE
 app.get("/products", async (req, res) => {
   try {
-    const products = await Product.find({ isAvailable: true })
+    const { search = "", category = "", featured = "" } = req.query;
+    const filter = { isAvailable: true, stock: { $gt: 0 } };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: String(search), $options: "i" } },
+        { category: { $regex: String(search), $options: "i" } },
+      ];
+    }
+    if (category && category !== "All") filter.category = category;
+    if (featured === "true") filter.featured = true;
+
+    const products = await Product.find(filter)
       .populate("storeId", "storeName address phone")
-      .sort({ createdAt: -1 });
+      .sort({ featured: -1, createdAt: -1 })
+      .limit(100);
 
     res.json(products);
   } catch (err) {

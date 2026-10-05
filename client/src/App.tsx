@@ -16,6 +16,7 @@ import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import OrderTracking from "./pages/OderTracking";
 import Profile from "./pages/Profile";
+import ProductDetails from "./pages/ProductDetails";
 
 /* ADMIN */
 import AdminOrders from "./admin/AdminOrders";
@@ -60,6 +61,7 @@ function AppContent() {
           {/* CUSTOMER */}
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
 
           <Route path="/login" element={<Navigate to="/customer-login" />} />
           <Route

@@ -334,14 +334,14 @@ function Home() {
 
               return (
                 <article className="mm-product" key={item._id}>
-                  <div className="mm-product-img">
+                  <div className="mm-product-img" onClick={() => navigate(`/product/${item._id}`)}>
                     <span className="mm-badge">
                       {item.discountPercent && item.discountPercent > 0 ? `${item.discountPercent}% OFF` : "⚡ Fast"}
                     </span>
 
                     <button
                       className="mm-wish"
-                      onClick={() => toggleWishlist(item._id)}
+                      onClick={(e) => { e.stopPropagation(); toggleWishlist(item._id); }}
                     >
                       {wishlist.includes(item._id) ? "❤️" : "🤍"}
                     </button>
@@ -359,16 +359,16 @@ function Home() {
                     {qty === 0 ? (
                       <button
                         className="mm-add"
-                        onClick={() => addToCart(item)}
+                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                         disabled={item.stock === 0}
                       >
                         {item.stock === 0 ? "SOLD OUT" : "ADD"}
                       </button>
                     ) : (
                       <div className="mm-qty">
-                        <button onClick={() => changeQty(item._id, "dec")}>-</button>
+                        <button onClick={(e) => { e.stopPropagation(); changeQty(item._id, "dec"); }}>-</button>
                         <b>{qty}</b>
-                        <button onClick={() => changeQty(item._id, "inc")}>+</button>
+                        <button onClick={(e) => { e.stopPropagation(); changeQty(item._id, "inc"); }}>+</button>
                       </div>
                     )}
                   </div>

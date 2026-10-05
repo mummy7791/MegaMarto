@@ -311,9 +311,11 @@ export default function StoreDashboard() {
   };
 
   const pendingOrders = orders.filter((o) => o.status === "STORE_PENDING");
-  const deliveryAcceptedOrders = orders.filter(
-    (o) => o.status === "DELIVERY_ACCEPTED"
-  );
+  const deliveryAcceptedOrders = orders.filter((o) => o.status === "DELIVERY_ACCEPTED");
+  const activeOrders = orders.filter((o) => !["DELIVERED", "STORE_CANCELLED"].includes(o.status));
+  const deliveredOrders = orders.filter((o) => o.status === "DELIVERED");
+  const sales = deliveredOrders.reduce((sum, o) => sum + o.total, 0);
+  const lowStock = products.filter((p) => p.stock <= 5).length;
 
   return (
     <div className="store-page">
@@ -360,8 +362,7 @@ export default function StoreDashboard() {
       <main className="store-main">
         <header className="store-header">
           <div>
-            <h1>Store Dashboard</h1>
-            <p>Manage products, stock and orders</p>
+            <span className="store-kicker">MEGAMARTO PARTNER</span><h1>{storeUser.storeName || "Store Dashboard"}</h1><p>Manage catalog, stock and fulfilment in one place</p>
           </div>
 
           {tab === "products" ? (
@@ -370,6 +371,8 @@ export default function StoreDashboard() {
             <button onClick={loadOrders}>Refresh Orders</button>
           )}
         </header>
+
+        <section className="store-overview"><div><span>Active Orders</span><b>{activeOrders.length}</b></div><div><span>Delivered</span><b>{deliveredOrders.length}</b></div><div><span>Sales</span><b>₹{sales}</b></div><div><span>Low Stock</span><b>{lowStock}</b></div></section>
 
         {tab === "products" && (
           <>
@@ -485,28 +488,27 @@ export default function StoreDashboard() {
 
         {tab === "orders" && (
           <section className="store-card">
-            <h2>Store Orders</h2>
+            <div className="section-title"><div><span>FULFILMENT</span><h2>Store Orders</h2></div><small>Accept new orders, prepare items and hand over to the assigned delivery partner.</small></div>
 
             {orders.length === 0 ? (
               <p>No orders found.</p>
             ) : (
               orders.map((order) => (
                 <div className="order-card" key={order._id}>
-                  <h3>Order #{order._id.slice(-6)}</h3>
-                  <p><b>Total:</b> ₹{order.total}</p>
-                  <p><b>Status:</b> {order.status.replaceAll("_", " ")}</p>
+                  <div className="order-card-head"><div><span className={`order-status status-${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span><h3>Order #{order._id.slice(-6).toUpperCase()}</h3></div><strong>₹{order.total}</strong></div>
+                  
                   <p>
                     <b>Payment:</b> {order.paymentMethod} / {order.paymentStatus}
                   </p>
 
-                  <h4>Items</h4>
+                  <h4 className="order-label">Order Items</h4>
                   {order.items?.map((item, i) => (
                     <p key={i}>
                       {item.name} x {item.qty} = ₹{item.price * item.qty}
                     </p>
                   ))}
 
-                  <h4>Customer</h4>
+                  <h4 className="order-label">Customer</h4>
                   <p>{order.address?.name}</p>
                   <p>{order.address?.phone}</p>
                   <p>
@@ -516,7 +518,7 @@ export default function StoreDashboard() {
 
                   {order.deliveryBoy && (
                     <>
-                      <h4>🚴 Delivery Boy</h4>
+                      <h4 className="order-label">Delivery Partner</h4>
                       <p>Name: {order.deliveryBoy.name}</p>
                       <p>Phone: {order.deliveryBoy.phone}</p>
                       <p>Bike: {order.deliveryBoy.bikeNumber || "N/A"}</p>
@@ -526,7 +528,7 @@ export default function StoreDashboard() {
                   {order.status === "STORE_PENDING" && (
                     <div className="order-actions">
                       <button onClick={() => acceptOrder(order._id)}>
-                        Accept Order
+                        Accept & Prepare
                       </button>
                       <button
                         className="danger"

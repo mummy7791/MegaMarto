@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Checkout.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -122,12 +122,23 @@ function Checkout() {
     pincode: "",
   });
 
-  const total = cart.reduce(
+  const itemTotal = cart.reduce(
     (sum, item) => sum + (item.price || 0) * (item.qty || 1),
     0
   );
 
+  const deliveryFee = itemTotal >= 499 ? 0 : 35;
+  const handlingFee = 5;
+  const total = itemTotal + deliveryFee + handlingFee;
+
   const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("customerUser") || "{}");
+      setAddress((prev) => ({ ...prev, name: user.name || prev.name, phone: user.phone || prev.phone }));
+    } catch { /* keep empty fields */ }
+  }, []);
 
   const getSavedLocation = (): LocationData | null => {
     try {
@@ -444,10 +455,10 @@ function Checkout() {
 
   return (
     <div className="checkout">
-      <h2>🚀 Checkout</h2>
+      <div className="checkout-title"><span>SECURE CHECKOUT</span><h2>Complete your order</h2><p>Delivery in approximately 10–20 minutes</p></div>
 
       <div className="address-box">
-        <h3>Delivery Address</h3>
+        <h3><span className="step-no">1</span> Delivery Address</h3><p className="section-note">Enter the address where you want your order delivered.</p>
 
         <input
           name="name"
@@ -488,7 +499,7 @@ function Checkout() {
       </div>
 
       <div className="summary">
-        <h3>Order Summary ({totalItems} items)</h3>
+        <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>
 
         {cart.map((item) => (
           <div key={item._id || item.id} className="summary-item">
@@ -499,11 +510,11 @@ function Checkout() {
           </div>
         ))}
 
-        <h3>Total: ₹{total}</h3>
+        <div className="checkout-bill"><div><span>Item total</span><b>₹{itemTotal}</b></div><div><span>Delivery fee</span><b>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</b></div><div><span>Handling fee</span><b>₹{handlingFee}</b></div><div className="checkout-total"><span>To pay</span><b>₹{total}</b></div></div>
       </div>
 
       <button className="place-btn" onClick={openPayment} disabled={loading}>
-        {loading ? "Checking..." : "Continue To Payment 💳"}
+        {loading ? "Checking..." : "Continue to payment →"}
       </button>
 
       {paymentOpen && (

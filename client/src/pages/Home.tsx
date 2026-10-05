@@ -354,12 +354,12 @@ function Home() {
 
                   <div className="mm-product-info">
                     <h3>{item.name}</h3>
-                    <p>1 pack</p>
+                    <p>{item.unit || "1 pack"}</p>
                     <div>
                       <b>₹{item.price}</b>
-                      <del>₹{item.price + 40}</del>
+                      <del>₹{item.mrp && item.mrp > item.price ? item.mrp : item.price + 40}</del>
                     </div>
-                    <span>⭐ 4.8</span>
+                    <span>⭐ {item.rating || 4.5}{typeof item.stock === "number" && item.stock <= 5 ? ` · Only ${item.stock} left` : ""}</span>
                   </div>
                 </article>
               );

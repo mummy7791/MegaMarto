@@ -34,7 +34,9 @@ function Navbar() {
   const location = useLocation();
   const [cartCount, setCartCount] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);\n  const [deliveryLocation, setDeliveryLocation] = useState("Your location");\n  const [locationLoading, setLocationLoading] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState("Your location");
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const isCustomerAuth = isValidToken(localStorage.getItem("customerToken"));
   const customerUser = getUserFromStorage("customerUser");

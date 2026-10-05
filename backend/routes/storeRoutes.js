@@ -226,6 +226,10 @@ router.put("/orders/:id/status", auth, async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    if (order.status !== "STORE_PENDING") {
+      return res.status(400).json({ message: "Only pending orders can be accepted or cancelled" });
+    }
+
     if (status === "STORE_CANCELLED") {
       order.status = "STORE_CANCELLED";
       order.storeStatus = "CANCELLED";

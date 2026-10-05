@@ -217,6 +217,7 @@ function Home() {
   }, [products, search, selected]);
 
   const currentSlide = heroSlides[slide];
+  const fallbackImage = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600";
 
   return (
     <main className="mm-home">
@@ -346,8 +347,13 @@ function Home() {
                     </button>
 
                     <img
-                      src={item.image || "https://via.placeholder.com/300"}
+                      src={item.image || fallbackImage}
                       alt={item.name}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = fallbackImage;
+                      }}
                     />
 
                     {qty === 0 ? (
@@ -385,8 +391,7 @@ function Home() {
       </section>
 
       <footer className="mm-footer">
-        <h2>MegaMarto</h2>
-        <p>Fresh groceries, daily essentials and fast delivery.</p>
+        <div className="mm-footer-brand"><span>M</span><div><h2>MegaMarto</h2><p>Fresh groceries, daily essentials and fast delivery.</p></div></div>
 
         <div className="mm-footer-benefits">
           <span>🚀 10 Min Delivery</span>

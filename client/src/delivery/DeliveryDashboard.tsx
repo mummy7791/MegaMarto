@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { io } from "socket.io-client";
+import { useNavigate } from "react-router-dom";
 import "./DeliveryDashboard.css";
 
 const API = "https://megamarto-backend.onrender.com";
@@ -58,6 +59,8 @@ export default function DeliveryDashboard() {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("AVAILABLE");
+  const navigate = useNavigate();
+  const deliveryUser = JSON.parse(localStorage.getItem("deliveryUser") || "{}");
 
   const getToken = () => localStorage.getItem("deliveryToken") || "";
 
@@ -139,7 +142,7 @@ export default function DeliveryDashboard() {
   }, [refreshAll]);
 
   useEffect(() => {
-    const deliveryBoy = JSON.parse(localStorage.getItem("deliveryBoy") || "{}");
+    const deliveryBoy = JSON.parse(localStorage.getItem("deliveryUser") || "{}");
 
     if (!socket.connected) {
       socket.connect();
@@ -291,6 +294,13 @@ export default function DeliveryDashboard() {
 
   const earnings = deliveredOrders.length * 25;
 
+  const logout = () => {
+    localStorage.removeItem("deliveryToken");
+    localStorage.removeItem("deliveryUser");
+    socket.disconnect();
+    navigate("/delivery-login", { replace: true });
+  };
+
   if (loading) {
     return <div className="delivery-page">Loading delivery orders...</div>;
   }
@@ -298,12 +308,11 @@ export default function DeliveryDashboard() {
   return (
     <div className="delivery-page">
       <div className="delivery-hero">
-        <div>
-          <h1>🚴 Delivery Partner</h1>
-          <p>MegaMarto live delivery dashboard</p>
+        <div className="partner-head">
+          <div className="partner-avatar">{(deliveryUser.name || deliveryUser.username || "D").charAt(0).toUpperCase()}</div>
+          <div><span className="partner-kicker">MEGAMARTO DELIVERY</span><h1>{deliveryUser.name || "Delivery Partner"}</h1><p>{deliveryUser.phone || deliveryUser.username || "Live delivery dashboard"}</p></div>
         </div>
-
-        <div className="online-pill">● Online</div>
+        <div className="hero-actions"><div className="online-pill">● Online</div><button onClick={() => void refreshAll()}>↻ Refresh</button><button className="logout-btn" onClick={logout}>Logout</button></div>
       </div>
 
       <div className="delivery-stats">
@@ -395,7 +404,7 @@ export default function DeliveryDashboard() {
             </div>
 
             <div className="customer-box">
-              <h3>🏪 Store Details</h3>
+              <div className="delivery-route"><span>1</span><div><small>PICKUP FROM</small><h3>Store Details</h3></div></div>
               <p>
                 Store:{" "}
                 {order.storeId?.storeName || order.storeName || "Store"}
@@ -406,7 +415,7 @@ export default function DeliveryDashboard() {
               </p>
               <p>Store Phone: {order.storeId?.phone || "N/A"}</p>
 
-              <h3>👤 Customer Details</h3>
+              <div className="delivery-route"><span>2</span><div><small>DELIVER TO</small><h3>Customer Details</h3></div></div>
               <p>Customer: {order.address?.name || "Customer"}</p>
               <p>Phone: {order.address?.phone || "N/A"}</p>
               <p>
@@ -415,14 +424,14 @@ export default function DeliveryDashboard() {
                 {order.address?.pincode || ""}
               </p>
 
-              <h3>📦 Items</h3>
+              <h3 className="box-heading">Order Items</h3>
               {order.items?.map((item, index) => (
                 <p key={index}>
                   {item.name} x {item.qty} = ₹{item.price * item.qty}
                 </p>
               ))}
 
-              <h3>💳 Payment</h3>
+              <h3 className="box-heading">Payment</h3>
               <p>
                 {order.paymentMethod || "COD"} /{" "}
                 {order.paymentStatus || "PENDING"}
@@ -450,7 +459,7 @@ export default function DeliveryDashboard() {
                       className="accept-btn"
                       onClick={() => acceptDeliveryOrder(order._id)}
                     >
-                      Accept This Order
+                      Accept delivery
                     </button>
                   )}
 
@@ -460,7 +469,7 @@ export default function DeliveryDashboard() {
                       className="accept-btn"
                       onClick={() => updateStatus(order._id, "PICKED_UP")}
                     >
-                      Order Picked Up
+                      Confirm pickup
                     </button>
                   )}
 
@@ -471,7 +480,7 @@ export default function DeliveryDashboard() {
                       updateStatus(order._id, "OUT_FOR_DELIVERY")
                     }
                   >
-                    Start To Customer
+                    Start delivery
                   </button>
                 )}
 

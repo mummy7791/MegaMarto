@@ -13,6 +13,7 @@ type Product = {
   unit?: string;
   stock?: number;
   rating?: number;
+  discountPercent?: number;
 };
 
 const API_URL = "https://megamarto-backend.onrender.com";
@@ -155,6 +156,10 @@ function Home() {
   };
 
   const addToCart = (item: Product) => {
+    if (typeof item.stock === "number" && item.stock <= 0) return;
+    const currentQty = getQty(item._id);
+    if (typeof item.stock === "number" && currentQty >= item.stock) return;
+
     const exist = cart.find((c) => c._id === item._id);
 
     if (exist) {
@@ -329,7 +334,9 @@ function Home() {
               return (
                 <article className="mm-product" key={item._id}>
                   <div className="mm-product-img">
-                    <span className="mm-badge">🔥 Deal</span>
+                    <span className="mm-badge">
+                      {item.discountPercent && item.discountPercent > 0 ? `${item.discountPercent}% OFF` : "⚡ Fast"}
+                    </span>
 
                     <button
                       className="mm-wish"
@@ -344,8 +351,12 @@ function Home() {
                     />
 
                     {qty === 0 ? (
-                      <button className="mm-add" onClick={() => addToCart(item)}>
-                        ADD
+                      <button
+                        className="mm-add"
+                        onClick={() => addToCart(item)}
+                        disabled={item.stock === 0}
+                      >
+                        {item.stock === 0 ? "SOLD OUT" : "ADD"}
                       </button>
                     ) : (
                       <div className="mm-qty">
@@ -357,6 +368,7 @@ function Home() {
                   </div>
 
                   <div className="mm-product-info">
+                    <div className="mm-delivery-time">⚡ 10–20 mins</div>
                     <h3>{item.name}</h3>
                     <p>{item.unit || "1 pack"}</p>
                     <div>

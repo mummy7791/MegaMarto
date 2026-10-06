@@ -108,7 +108,9 @@ function Checkout() {
 
   const [loading, setLoading] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] =\n    useState<PaymentMethod>("RAZORPAY");\n  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>("RAZORPAY");
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
 
   const [cart] = useState<Product[]>(() => {
     try {
@@ -132,7 +134,9 @@ function Checkout() {
     0
   );
 
-  const deliveryFee = quote?.pricing.deliveryFee ?? (itemTotal >= 499 ? 0 : 35);\n  const handlingFee = quote?.pricing.handlingFee ?? 5;\n  const total = quote?.pricing.total ?? (itemTotal + deliveryFee + handlingFee);
+  const deliveryFee = quote?.pricing.deliveryFee ?? (itemTotal >= 499 ? 0 : 35);
+  const handlingFee = quote?.pricing.handlingFee ?? 5;
+  const total = quote?.pricing.total ?? (itemTotal + deliveryFee + handlingFee);
 
   const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
 
@@ -264,7 +268,15 @@ function Checkout() {
       }
     }
 
-    try {\n      setLoading(true);\n      await fetchCheckoutQuote();\n      setPaymentOpen(true);\n    } catch (err) {\n      toast.error(err instanceof Error ? err.message : "Checkout total failed");\n    } finally {\n      setLoading(false);\n    }
+    try {
+      setLoading(true);
+      await fetchCheckoutQuote();
+      setPaymentOpen(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Checkout total failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadRazorpayScript = () => {
@@ -516,7 +528,9 @@ function Checkout() {
         />
       </div>
 
-      <div className="summary">\n        <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>\n        {quote && quote.shopCount > 1 && <p className="section-note">Split across {quote.shopCount} shops. Delivery and handling are calculated per shop.</p>}
+      <div className="summary">
+        <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>
+        {quote && quote.shopCount > 1 && <p className="section-note">Split across {quote.shopCount} shops. Delivery and handling are calculated per shop.</p>}
 
         {cart.map((item) => (
           <div key={item._id || item.id} className="summary-item">

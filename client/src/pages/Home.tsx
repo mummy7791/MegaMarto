@@ -378,7 +378,9 @@ function Home() {
                   <div className="mm-product-info">
                     <div className="mm-delivery-time">⚡ 10–20 mins</div>
                     <h3>{item.name}</h3>
-                    <p>{item.unit || "1 pack"}</p>\n                    <small className="mm-seller">Sold by {typeof item.storeId === "object" && item.storeId?.storeName ? item.storeId.storeName : item.storeName || "MegaMarto"}</small>\n                    <div>
+                    <p>{item.unit || "1 pack"}</p>
+                    <small className="mm-seller">Sold by {typeof item.storeId === "object" && item.storeId?.storeName ? item.storeId.storeName : item.storeName || "MegaMarto"}</small>
+                    <div>
                       <b>₹{item.price}</b>
                       <del>₹{item.mrp && item.mrp > item.price ? item.mrp : item.price + 40}</del>
                     </div>

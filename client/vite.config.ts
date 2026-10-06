@@ -10,6 +10,12 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
+      minify: false,
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+      },
 
       includeAssets: [
         "favicon.ico",

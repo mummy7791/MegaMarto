@@ -64,8 +64,7 @@ router.get("/available-orders", auth, async (req, res) => {
     }
 
     const orders = await Order.find({
-      status: "STORE_ACCEPTED",
-      deliveryBoy: null,
+      status: { $in: ["STORE_ACCEPTED", "ASSIGNED"] },
     })
       .populate("storeId", "storeName address phone location")
       .sort({ createdAt: -1 });
@@ -89,14 +88,17 @@ router.put("/accept-order/:id", auth, async (req, res) => {
 
     const order = await Order.findOne({
       _id: req.params.id,
-      status: "STORE_ACCEPTED",
-      deliveryBoy: null,
+      status: { $in: ["STORE_ACCEPTED", "ASSIGNED"] },
     });
 
     if (!order) {
       return res.status(400).json({
         message: "Order already accepted by another delivery boy",
       });
+    }
+
+    if (order.status === "ASSIGNED" && String(order.deliveryBoy) !== String(req.user.id)) {
+      return res.status(403).json({ message: "This order is assigned to another delivery partner" });
     }
 
     order.deliveryBoy = req.user.id;

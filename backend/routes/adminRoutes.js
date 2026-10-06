@@ -317,6 +317,19 @@ router.put("/assign-order/:orderId", auth, adminOnly, async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    if (order.status !== "STORE_ACCEPTED") {
+      return res.status(400).json({ message: "Shop must accept the order before delivery assignment" });
+    }
+
+    if (order.deliveryBoy) {
+      return res.status(400).json({ message: "Delivery partner is already assigned" });
+    }
+
+    const boy = await DeliveryBoy.findOne({ _id: deliveryBoyId, status: "active" });
+    if (!boy) {
+      return res.status(400).json({ message: "Select an active delivery partner" });
+    }
+
     order.deliveryBoy = deliveryBoyId;
     order.status = "ASSIGNED";
 

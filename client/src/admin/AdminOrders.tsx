@@ -260,19 +260,14 @@ function AdminOrders() {
                     <p>No items</p>
                   )}
 
-                  <div style={{ marginTop: 10 }}>
-                    <button onClick={() => updateStatus(order._id, "OUT_FOR_DELIVERY")}>
-                      OUT FOR DELIVERY
-                    </button>
+                  {order.status === "STORE_PENDING" && (
+                    <div style={{ marginTop: 10 }}>
+                      <button onClick={() => updateStatus(order._id, "STORE_ACCEPTED")}>MARK SHOP ACCEPTED</button>
+                      <button onClick={() => updateStatus(order._id, "STORE_CANCELLED")} style={{ marginLeft: 10 }}>CANCEL ORDER</button>
+                    </div>
+                  )}
 
-                    <button
-                      onClick={() => updateStatus(order._id, "DELIVERED")}
-                      style={{ marginLeft: 10 }}
-                    >
-                      DELIVERED
-                    </button>
-                  </div>
-
+                  {order.status === "STORE_ACCEPTED" && !order.deliveryBoy && (
                   <div style={{ marginTop: 12 }}>
                     <select
                       defaultValue=""
@@ -291,6 +286,9 @@ function AdminOrders() {
                       ))}
                     </select>
                   </div>
+                  )}
+                  {order.status === "ASSIGNED" && <p style={{ marginTop: 12 }}>Waiting for the assigned delivery partner to accept.</p>}
+                  {["DELIVERY_ACCEPTED","PICKED_UP","OUT_FOR_DELIVERY"].includes(order.status) && <p style={{ marginTop: 12 }}>Delivery partner controls the remaining delivery steps.</p>}
                 </div>
               )}
             </div>

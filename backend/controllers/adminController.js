@@ -24,17 +24,7 @@ exports.updateOrder = async (req, res) => {
     const { status } = req.body;
 
     /* ✅ VALID STATUS CHECK */
-    const validStatuses = [
-      "PLACED",
-      "STORE_PENDING",
-      "STORE_ACCEPTED",
-      "STORE_CANCELLED",
-      "ASSIGNED",
-      "DELIVERY_ACCEPTED",
-      "PICKED_UP",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED",
-    ];
+    const validStatuses = ["PLACED", "STORE_PENDING", "STORE_ACCEPTED", "STORE_CANCELLED"];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -55,7 +45,6 @@ exports.updateOrder = async (req, res) => {
     order.status = status;
     if (status === "STORE_ACCEPTED") order.storeStatus = "ACCEPTED";
     if (status === "STORE_CANCELLED") order.storeStatus = "CANCELLED";
-    if (status === "DELIVERED" && order.paymentMethod === "COD") order.paymentStatus = "PAID";
     await order.save();
 
     /* 🔥 REAL-TIME UPDATE (Socket.io) */

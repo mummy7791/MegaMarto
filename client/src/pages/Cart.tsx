@@ -12,6 +12,8 @@ type Product = {
   mrp?: number;
   unit?: string;
   stock?: number;
+  storeId?: { _id?: string; storeName?: string } | string | null;
+  storeName?: string;
 };
 
 const getInitialCart = (): Product[] => {
@@ -136,7 +138,7 @@ function Cart() {
                 />
 
                 <div className="cart-info">
-                  <h4>{item.name}</h4><small>{item.unit || "1 pack"}</small><p>₹{item.price} {item.mrp && item.mrp > item.price ? <del>₹{item.mrp}</del> : null}</p>
+                  <h4>{item.name}</h4><small>{item.unit || "1 pack"}</small><small className="cart-seller">Sold by {typeof item.storeId === "object" && item.storeId?.storeName ? item.storeId.storeName : item.storeName || "MegaMarto"}</small><p>₹{item.price} {item.mrp && item.mrp > item.price ? <del>₹{item.mrp}</del> : null}</p>
 
                   <div className="qty-box">
                     <button onClick={() => decreaseQty(itemId)}>-</button>

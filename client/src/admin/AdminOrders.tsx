@@ -14,7 +14,13 @@ type Order = {
   address?: {
     name?: string;
   };
-  items?: OrderItem[];\n  storeName?: string;\n  storeId?: { storeName?: string; ownerName?: string; phone?: string } | null;\n  paymentMethod?: string;\n  paymentStatus?: string;\n  deliveryBoy?: { name?: string; phone?: string; bikeNumber?: string } | null;\n};
+  items?: OrderItem[];
+  storeName?: string;
+  storeId?: { storeName?: string; ownerName?: string; phone?: string } | null;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  deliveryBoy?: { name?: string; phone?: string; bikeNumber?: string } | null;
+};
 
 type DeliveryBoy = {
   _id: string;
@@ -222,7 +228,9 @@ function AdminOrders() {
                     <b>Order:</b> #{order._id.slice(-8).toUpperCase()}
                   </p>
                   <p>
-                    <b>Customer:</b> {order.address?.name || "N/A"}\n                  </p>\n                  <p><b>Shop:</b> {order.storeId?.storeName || order.storeName || "MegaMarto"}
+                    <b>Customer:</b> {order.address?.name || "N/A"}
+                  </p>
+                  <p><b>Shop:</b> {order.storeId?.storeName || order.storeName || "MegaMarto"}
                   </p>
                 </div>
 
@@ -238,7 +246,9 @@ function AdminOrders() {
                 <div style={{ marginTop: 10 }}>
                   <hr />
 
-                  <div className="admin-order-meta"><span>🏪 {order.storeId?.storeName || order.storeName || "MegaMarto"}</span><span>💳 {order.paymentMethod || "COD"} / {order.paymentStatus || "PENDING"}</span>{order.deliveryBoy?.name && <span>🚴 {order.deliveryBoy.name}</span>}</div>\n\n                  <h4>🛒 Items from this shop</h4>
+                  <div className="admin-order-meta"><span>🏪 {order.storeId?.storeName || order.storeName || "MegaMarto"}</span><span>💳 {order.paymentMethod || "COD"} / {order.paymentStatus || "PENDING"}</span>{order.deliveryBoy?.name && <span>🚴 {order.deliveryBoy.name}</span>}</div>
+
+                  <h4>🛒 Items from this shop</h4>
 
                   {order.items?.length ? (
                     order.items.map((item, i) => (
@@ -251,7 +261,9 @@ function AdminOrders() {
                   )}
 
                   <div style={{ marginTop: 10 }}>
-                    <button onClick={() => updateStatus(order._id, "OUT_FOR_DELIVERY")}>\n                      OUT FOR DELIVERY\n                    </button>
+                    <button onClick={() => updateStatus(order._id, "OUT_FOR_DELIVERY")}>
+                      OUT FOR DELIVERY
+                    </button>
 
                     <button
                       onClick={() => updateStatus(order._id, "DELIVERED")}

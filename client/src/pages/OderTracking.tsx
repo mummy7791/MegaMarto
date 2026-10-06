@@ -11,6 +11,7 @@ type Order = {
 const steps=[["PLACED","Order placed","We received your order"],["STORE_ACCEPTED","Store accepted","The shop is preparing your items"],["ASSIGNED","Partner assigned","Delivery partner has been assigned"],["PICKED_UP","Picked up","Your items were collected from the shop"],["OUT_FOR_DELIVERY","Out for delivery","Your order is on the way"],["DELIVERED","Delivered","Order delivered successfully"]] as const;
 const normalized=(s:OrderStatus)=>s==="STORE_PENDING"?"PLACED":s==="DELIVERY_ACCEPTED"?"ASSIGNED":s;
 
+// Production rebuild marker: order tracking JSX verified
 export default function OrderTracking(){
  const {id}=useParams<{id:string}>(); const navigate=useNavigate();
  const [order,setOrder]=useState<Order|null>(null),[loading,setLoading]=useState(!!id),[error,setError]=useState("");

@@ -29,7 +29,7 @@ export default function OrderTracking(){
    <div className="ot-grid">
     <section className="ot-card">
       <div className="ot-card-head"><div><span>ORDER JOURNEY</span><h2>Track your delivery</h2></div><button onClick={fetchOrder}>Refresh</button></div>
-      {cancelled?<div className="ot-cancel-message"><b>This shop order was cancelled.</b><p>No further delivery progress will be shown for this order.</p></div>:<div className="ot-timeline">{steps.map(([key,title,text],i)=><div className={`ot-step ${i<=current?"done":""} ${i===current?"current":""}`} key={key}><div className="ot-dot">{i<current||delivered?"✓":i+1}</div><div><b>{title}</b><p>{i<current||delivered?"Completed":i===current?text:"Pending"}</p></div></div>)}</div>
+      {cancelled?<div className="ot-cancel-message"><b>This shop order was cancelled.</b><p>No further delivery progress will be shown for this order.</p></div>:<div className="ot-timeline">{steps.map(([key,title,text],i)=><div className={`ot-step ${i<=current?"done":""} ${i===current?"current":""}`} key={key}><div className="ot-dot">{i<current||delivered?"✓":i+1}</div><div><b>{title}</b><p>{i<current||delivered?"Completed":i===current?text:"Pending"}</p></div></div>)}</div>}
     </section>
     <aside>
       <section className="ot-card ot-summary"><span>ORDER SUMMARY</span><p className="ot-store">🏪 {order.storeId?.storeName||order.storeName||"MegaMarto"}</p><h2>₹{order.total}</h2><div><small>Payment</small><b>{order.paymentMethod||"COD"} · {order.paymentStatus||"PENDING"}</b></div><div><small>Items</small><b>{order.items?.reduce((n,x)=>n+x.qty,0)||0} items</b></div></section>

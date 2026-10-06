@@ -81,7 +81,7 @@ const heroSlides = [
 ];
 
 const offers = [
-  ["⚡ 10 Minutes Delivery", "Fresh groceries at your doorstep", "purple"],
+  ["Fast Local Delivery", "Fresh groceries at your doorstep", "purple"],
   ["🥬 Fresh & Healthy", "Daily fresh fruits and vegetables", "green"],
   ["🎁 FIRST50 Coupon", "Save more on your first order", "pink"],
   ["🛒 MegaMarto Deals", "Daily essentials at best prices", "orange"],
@@ -141,7 +141,8 @@ function Home() {
       (pos) => {
         const value = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
         setLocation(value);
-        localStorage.setItem("userLocation", value);
+        localStorage.setItem("userLocation", JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, displayName: value }));
+        window.dispatchEvent(new Event("locationUpdated"));
         setLoadingLocation(false);
       },
       () => {
@@ -376,7 +377,7 @@ function Home() {
                   </div>
 
                   <div className="mm-product-info">
-                    <div className="mm-delivery-time">⚡ 10–20 mins</div>
+                    <div className="mm-delivery-time">Fast delivery</div>
                     <h3>{item.name}</h3>
                     <p>{item.unit || "1 pack"}</p>
                     <small className="mm-seller">Sold by {typeof item.storeId === "object" && item.storeId?.storeName ? item.storeId.storeName : item.storeName || "MegaMarto"}</small>

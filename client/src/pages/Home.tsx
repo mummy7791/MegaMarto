@@ -14,6 +14,8 @@ type Product = {
   stock?: number;
   rating?: number;
   discountPercent?: number;
+  storeId?: { _id?: string; storeName?: string } | string | null;
+  storeName?: string;
 };
 
 const API_URL = "https://megamarto-backend.onrender.com";
@@ -177,7 +179,7 @@ function Home() {
     const updated = cart
       .map((c) =>
         c._id === id
-          ? { ...c, qty: type === "inc" ? (c.qty || 0) + 1 : (c.qty || 0) - 1 }
+          ? { ...c, qty: type === "inc" ? (typeof c.stock === "number" ? Math.min((c.qty || 0) + 1, c.stock) : (c.qty || 0) + 1) : (c.qty || 0) - 1 }
           : c
       )
       .filter((c) => (c.qty || 0) > 0);
@@ -376,8 +378,7 @@ function Home() {
                   <div className="mm-product-info">
                     <div className="mm-delivery-time">⚡ 10–20 mins</div>
                     <h3>{item.name}</h3>
-                    <p>{item.unit || "1 pack"}</p>
-                    <div>
+                    <p>{item.unit || "1 pack"}</p>\n                    <small className="mm-seller">Sold by {typeof item.storeId === "object" && item.storeId?.storeName ? item.storeId.storeName : item.storeName || "MegaMarto"}</small>\n                    <div>
                       <b>₹{item.price}</b>
                       <del>₹{item.mrp && item.mrp > item.price ? item.mrp : item.price + 40}</del>
                     </div>

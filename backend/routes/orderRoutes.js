@@ -28,38 +28,62 @@ router.post("/", auth, async (req, res) => {
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
-    const safeItems = [];
-    let itemTotal = 0;
+    const groups = new Map();
+
     for (const item of items) {
       const product = productMap.get(String(item.productId));
       const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
       if (!product || product.stock < qty) return res.status(409).json({ message: (product?.name || "Product") + " has only " + (product?.stock || 0) + " left" });
-      safeItems.push({ productId: String(product._id), name: product.name, price: product.price, qty, image: product.image, storeId: product.storeId?._id || product.storeId || null });
-      itemTotal += product.price * qty;
+
+      const storeId = product.storeId?._id || product.storeId || null;
+      const storeKey = storeId ? String(storeId) : "admin";
+      const storeName = product.storeId?.storeName || product.storeName || "MegaMarto";
+      if (!groups.has(storeKey)) groups.set(storeKey, { storeId, storeName, items: [], itemTotal: 0 });
+
+      const group = groups.get(storeKey);
+      group.items.push({ productId: String(product._id), name: product.name, price: product.price, qty, image: product.image, storeId });
+      group.itemTotal += product.price * qty;
     }
 
-    const firstProduct = productMap.get(String(items[0].productId));
-    const storeId = firstProduct?.storeId?._id || firstProduct?.storeId || null;
-    const storeName = firstProduct?.storeId?.storeName || firstProduct?.storeName || "";
-    const deliveryFee = itemTotal >= 499 ? 0 : 35;
-    const handlingFee = 5;
-    const calculatedTotal = itemTotal + deliveryFee + handlingFee;
+    const createdOrders = [];
+    for (const group of groups.values()) {
+      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+      const handlingFee = 5;
+      const calculatedTotal = group.itemTotal + deliveryFee + handlingFee;
+      const order = await Order.create({
+        items: group.items, total: calculatedTotal, address, location, userId: req.user.id,
+        storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
+        status: group.storeId ? "STORE_PENDING" : "PLACED",
+        paymentMethod: paymentMethod || "COD", paymentStatus: paymentStatus || "PENDING", paymentId: paymentId || "",
+      });
+      createdOrders.push(order);
+    }
 
-    const order = await Order.create({
-      items: safeItems, total: calculatedTotal, address, location, userId: req.user.id,
-      storeId, storeName, storeStatus: "PENDING", status: storeId ? "STORE_PENDING" : "PLACED",
-      paymentMethod: paymentMethod || "COD", paymentStatus: paymentStatus || "PENDING", paymentId: paymentId || "",
-    });
-
-    for (const item of safeItems) await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
+    for (const group of groups.values()) {
+      for (const item of group.items) await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
+    }
 
     if (global.io) {
-      global.io.emit("orderPlaced", order);
-      global.io.emit("orderUpdated", order);
-      global.io.emit("inventoryUpdated", { productIds: safeItems.map((i) => i.productId) });
-      if (storeId) global.io.to("store_" + storeId).emit("newStoreOrder", order);
+      for (const order of createdOrders) {
+        global.io.emit("orderPlaced", order);
+        global.io.emit("orderUpdated", order);
+        if (order.storeId) global.io.to("store_" + order.storeId).emit("newStoreOrder", order);
+      }
+      global.io.emit("inventoryUpdated", { productIds: ids });
     }
-    res.status(201).json({ message: "Order placed successfully", order, pricing: { itemTotal, deliveryFee, handlingFee, total: calculatedTotal } });
+
+    const pricing = createdOrders.reduce((acc, order) => {
+      acc.total += order.total;
+      return acc;
+    }, { total: 0 });
+
+    res.status(201).json({
+      message: createdOrders.length > 1 ? `Order placed successfully across ${createdOrders.length} shops` : "Order placed successfully",
+      order: createdOrders[0],
+      orders: createdOrders,
+      orderCount: createdOrders.length,
+      pricing,
+    });
   } catch (err) {
     console.log("PLACE ORDER ERROR:", err);
     res.status(500).json({ message: "Server error" });

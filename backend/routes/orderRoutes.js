@@ -60,12 +60,18 @@ router.post("/quote", auth, async (req, res) => {
     const shops = [...groups.values()].map((group) => {
       const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
       const handlingFee = 5;
+      const commissionPercent = group.storeId ? 10 : 0;
+      const adminCommission = Math.round((group.itemTotal * commissionPercent) / 100);
+      const storeAmount = group.itemTotal - adminCommission;
       return {
         storeId: group.storeId,
         storeName: group.storeName,
         itemTotal: group.itemTotal,
         deliveryFee,
         handlingFee,
+        commissionPercent,
+        adminCommission,
+        storeAmount,
         total: group.itemTotal + deliveryFee + handlingFee,
       };
     });
@@ -124,9 +130,13 @@ router.post("/", auth, async (req, res) => {
       const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
       const handlingFee = 5;
       const calculatedTotal = group.itemTotal + deliveryFee + handlingFee;
+      const commissionPercent = group.storeId ? 10 : 0;
+      const adminCommission = Math.round((group.itemTotal * commissionPercent) / 100);
+      const storeAmount = group.itemTotal - adminCommission;
       const order = await Order.create({
         items: group.items, total: calculatedTotal, address, location, userId: req.user.id,
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
+        commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
         paymentMethod: paymentMethod || "COD", paymentStatus: paymentStatus || "PENDING", paymentId: paymentId || "",
       });

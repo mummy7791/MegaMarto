@@ -11,7 +11,11 @@ type Stats = {
   products: number;
   stores?: number;
   deliveryBoys?: number;
-  totalRevenue: number;\n  adminCommission?: number;\n  storeAmount?: number;\n  pendingSettlement?: number;\n};
+  totalRevenue: number;
+  adminCommission?: number;
+  storeAmount?: number;
+  pendingSettlement?: number;
+};
 
 type Order = {
   _id: string;
@@ -248,7 +252,8 @@ export default function AdminDashboard() {
               <div className="za-stat green"><span>💰</span><h2>₹{revenue}</h2><p>Total Revenue</p></div>
               <div className="za-stat orange"><span>📦</span><h2>{stats.products}</h2><p>Products</p></div>
               <div className="za-stat pink"><span>🏪</span><h2>{stats.stores || 0}</h2><p>Stores</p></div>
-              <div className="za-stat pink"><span>🚴</span><h2>{boys.length}</h2><p>Delivery Boys</p></div>\n              <div className="za-stat green"><span>💼</span><h2>₹{stats.pendingSettlement || 0}</h2><p>Pending Settlement</p></div>
+              <div className="za-stat pink"><span>🚴</span><h2>{boys.length}</h2><p>Delivery Boys</p></div>
+              <div className="za-stat green"><span>💼</span><h2>₹{stats.pendingSettlement || 0}</h2><p>Pending Settlement</p></div>
             </section>
 
             <section className="za-dashboard-grid">

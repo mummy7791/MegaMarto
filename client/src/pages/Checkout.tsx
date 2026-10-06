@@ -530,7 +530,8 @@ function Checkout() {
 
       <div className="summary">
         <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>
-        {quote && quote.shopCount > 1 && <p className="section-note">Split across {quote.shopCount} shops. Delivery and handling are calculated per shop.</p>}
+        {quote && quote.shopCount > 1 && <p className="section-note">Your cart has items from {quote.shopCount} shops. Pay once; MegaMarto creates separate shop orders and deliveries.</p>}
+        {quote && <div className="shop-split-summary">{quote.shops.map((shop, index) => <div className="shop-split-row" key={shop.storeName + index}><div><b>🏪 {shop.storeName}</b><small>Items ₹{shop.itemTotal} · Delivery {shop.deliveryFee === 0 ? "FREE" : `₹${shop.deliveryFee}`} · Handling ₹{shop.handlingFee}</small></div><b>₹{shop.total}</b></div>)}</div>}
 
         {cart.map((item) => (
           <div key={item._id || item.id} className="summary-item">

@@ -197,9 +197,15 @@ app.get("/products", async (req, res) => {
     const filter = { isAvailable: true, stock: { $gt: 0 } };
 
     if (search) {
+      const safeSearch = String(search).replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\    if (search) {
       filter.$or = [
         { name: { $regex: String(search), $options: "i" } },
         { category: { $regex: String(search), $options: "i" } },
+      ];
+    }").slice(0, 80);
+      filter.$or = [
+        { name: { $regex: safeSearch, $options: "i" } },
+        { category: { $regex: safeSearch, $options: "i" } },
       ];
     }
     if (category && category !== "All") filter.category = category;

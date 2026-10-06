@@ -392,7 +392,7 @@ function Checkout() {
       }
 
       const options: RazorpayOptions = {
-        key: "rzp_test_SzS55azcF8z86M",
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SzS55azcF8z86M",
         amount: razorpayOrder.amount,
         currency: "INR",
         name: "MegaMarto",
@@ -485,7 +485,7 @@ function Checkout() {
 
   return (
     <div className="checkout">
-      <div className="checkout-title"><span>SECURE CHECKOUT</span><h2>Complete your order</h2><p>Delivery in approximately 10–20 minutes</p></div>
+      <div className="checkout-title"><span>SECURE CHECKOUT</span><h2>Complete your order</h2><p>Shop-wise fulfilment with secure payment</p></div>
 
       <div className="address-box">
         <h3><span className="step-no">1</span> Delivery Address</h3><p className="section-note">Enter the address where you want your order delivered.</p>

@@ -3,7 +3,7 @@ const Order = require("../models/Order");
 /* ================= GET ALL ORDERS (ADMIN) ================= */
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find()\n      .populate("storeId", "storeName ownerName phone address")\n      .populate("deliveryBoy", "name phone bikeNumber")\n      .sort({ createdAt: -1 });
 
     return res.status(200).json(orders);
   } catch (err) {
@@ -23,9 +23,7 @@ exports.updateOrder = async (req, res) => {
     /* ✅ VALID STATUS CHECK */
     const validStatuses = [
       "PLACED",
-      "CONFIRMED",
-      "SHIPPED",
-      "DELIVERED",
+      "STORE_PENDING",\n      "STORE_ACCEPTED",\n      "STORE_CANCELLED",\n      "ASSIGNED",\n      "DELIVERY_ACCEPTED",\n      "PICKED_UP",\n      "OUT_FOR_DELIVERY",\n      "DELIVERED",
     ];
 
     if (!validStatuses.includes(status)) {
@@ -44,8 +42,7 @@ exports.updateOrder = async (req, res) => {
     }
 
     /* ✅ UPDATE */
-    order.status = status;
-    await order.save();
+    order.status = status;\n    if (status === "STORE_ACCEPTED") order.storeStatus = "ACCEPTED";\n    if (status === "STORE_CANCELLED") order.storeStatus = "CANCELLED";\n    if (status === "DELIVERED" && order.paymentMethod === "COD") order.paymentStatus = "PAID";\n    await order.save();
 
     /* 🔥 REAL-TIME UPDATE (Socket.io) */
     if (global.io) {

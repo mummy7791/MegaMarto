@@ -14,8 +14,7 @@ type Order = {
   address?: {
     name?: string;
   };
-  items?: OrderItem[];
-};
+  items?: OrderItem[];\n  storeName?: string;\n  storeId?: { storeName?: string; ownerName?: string; phone?: string } | null;\n  paymentMethod?: string;\n  paymentStatus?: string;\n  deliveryBoy?: { name?: string; phone?: string; bikeNumber?: string } | null;\n};
 
 type DeliveryBoy = {
   _id: string;
@@ -196,8 +195,8 @@ function AdminOrders() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>🛠 Admin Orders + Delivery Assign</h2>
+    <div className="admin-orders">
+      <div className="admin-orders-head"><div><span>FULFILMENT CONTROL</span><h2>Orders & Delivery</h2><p>Every order is linked to its actual selling shop.</p></div><button onClick={fetchOrders}>Refresh Orders</button></div>
 
       {orders.length === 0 ? (
         <p>No orders found</p>
@@ -208,13 +207,7 @@ function AdminOrders() {
           return (
             <div
               key={order._id}
-              style={{
-                background: "#fff",
-                padding: 15,
-                marginBottom: 12,
-                borderRadius: 10,
-                boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-              }}
+              className="admin-order-card"
             >
               <div
                 style={{
@@ -226,10 +219,10 @@ function AdminOrders() {
               >
                 <div>
                   <p>
-                    <b>ID:</b> {order._id}
+                    <b>Order:</b> #{order._id.slice(-8).toUpperCase()}
                   </p>
                   <p>
-                    <b>Name:</b> {order.address?.name || "N/A"}
+                    <b>Customer:</b> {order.address?.name || "N/A"}\n                  </p>\n                  <p><b>Shop:</b> {order.storeId?.storeName || order.storeName || "MegaMarto"}
                   </p>
                 </div>
 
@@ -245,7 +238,7 @@ function AdminOrders() {
                 <div style={{ marginTop: 10 }}>
                   <hr />
 
-                  <h4>🛒 Items</h4>
+                  <div className="admin-order-meta"><span>🏪 {order.storeId?.storeName || order.storeName || "MegaMarto"}</span><span>💳 {order.paymentMethod || "COD"} / {order.paymentStatus || "PENDING"}</span>{order.deliveryBoy?.name && <span>🚴 {order.deliveryBoy.name}</span>}</div>\n\n                  <h4>🛒 Items from this shop</h4>
 
                   {order.items?.length ? (
                     order.items.map((item, i) => (
@@ -258,9 +251,7 @@ function AdminOrders() {
                   )}
 
                   <div style={{ marginTop: 10 }}>
-                    <button onClick={() => updateStatus(order._id, "SHIPPED")}>
-                      SHIPPED
-                    </button>
+                    <button onClick={() => updateStatus(order._id, "OUT_FOR_DELIVERY")}>\n                      OUT FOR DELIVERY\n                    </button>
 
                     <button
                       onClick={() => updateStatus(order._id, "DELIVERED")}

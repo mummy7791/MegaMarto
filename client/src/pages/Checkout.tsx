@@ -29,6 +29,12 @@ type LocationData = {
 
 type PaymentMethod = "RAZORPAY" | "COD";
 
+type CheckoutQuote = {
+  shopCount: number;
+  shops: Array<{ storeName: string; itemTotal: number; deliveryFee: number; handlingFee: number; total: number }>;
+  pricing: { itemTotal: number; deliveryFee: number; handlingFee: number; total: number };
+};
+
 type RazorpayOrder = {
   id: string;
   amount: number;
@@ -102,8 +108,7 @@ function Checkout() {
 
   const [loading, setLoading] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("RAZORPAY");
+  const [paymentMethod, setPaymentMethod] =\n    useState<PaymentMethod>("RAZORPAY");\n  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
 
   const [cart] = useState<Product[]>(() => {
     try {
@@ -127,9 +132,7 @@ function Checkout() {
     0
   );
 
-  const deliveryFee = itemTotal >= 499 ? 0 : 35;
-  const handlingFee = 5;
-  const total = itemTotal + deliveryFee + handlingFee;
+  const deliveryFee = quote?.pricing.deliveryFee ?? (itemTotal >= 499 ? 0 : 35);\n  const handlingFee = quote?.pricing.handlingFee ?? 5;\n  const total = quote?.pricing.total ?? (itemTotal + deliveryFee + handlingFee);
 
   const totalItems = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
 
@@ -224,6 +227,21 @@ function Checkout() {
     return true;
   };
 
+  const fetchCheckoutQuote = async () => {
+    const token = localStorage.getItem("customerToken") || localStorage.getItem("token");
+    const res = await fetch("https://megamarto-backend.onrender.com/orders/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        items: cart.map((item) => ({ productId: item._id || item.id, qty: item.qty || 1 })),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.message || "Unable to calculate checkout total");
+    setQuote(data);
+    return data as CheckoutQuote;
+  };
+
   const openPayment = async () => {
     if (!validateAddress()) return;
 
@@ -246,7 +264,7 @@ function Checkout() {
       }
     }
 
-    setPaymentOpen(true);
+    try {\n      setLoading(true);\n      await fetchCheckoutQuote();\n      setPaymentOpen(true);\n    } catch (err) {\n      toast.error(err instanceof Error ? err.message : "Checkout total failed");\n    } finally {\n      setLoading(false);\n    }
   };
 
   const loadRazorpayScript = () => {
@@ -498,8 +516,7 @@ function Checkout() {
         />
       </div>
 
-      <div className="summary">
-        <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>
+      <div className="summary">\n        <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>\n        {quote && quote.shopCount > 1 && <p className="section-note">Split across {quote.shopCount} shops. Delivery and handling are calculated per shop.</p>}
 
         {cart.map((item) => (
           <div key={item._id || item.id} className="summary-item">
@@ -510,7 +527,7 @@ function Checkout() {
           </div>
         ))}
 
-        <div className="checkout-bill"><div><span>Item total</span><b>₹{itemTotal}</b></div><div><span>Delivery fee</span><b>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</b></div><div><span>Handling fee</span><b>₹{handlingFee}</b></div><div className="checkout-total"><span>To pay</span><b>₹{total}</b></div></div>
+        <div className="checkout-bill"><div><span>Item total</span><b>₹{quote?.pricing.itemTotal ?? itemTotal}</b></div><div><span>Delivery fee</span><b>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</b></div><div><span>Handling fee</span><b>₹{handlingFee}</b></div><div className="checkout-total"><span>To pay</span><b>₹{total}</b></div></div>
       </div>
 
       <button className="place-btn" onClick={openPayment} disabled={loading}>

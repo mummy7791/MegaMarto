@@ -25,21 +25,12 @@ const getInitialCart = (): Product[] => {
   }
 };
 
-const getDeliveryFee = (km: number) => {
-  if (km <= 1) return 20;
-  if (km <= 3) return 35;
-  if (km <= 5) return 50;
-  return 70;
-};
-
 function Cart() {
   const navigate = useNavigate();
 
   const [cart, setCart] = useState<Product[]>(getInitialCart);
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
-
-  const distance = 3;
 
   const updateCart = (updated: Product[]) => {
     setCart(updated);
@@ -98,25 +89,28 @@ function Cart() {
 
   const mrpTotal = cart.reduce((sum, item) => sum + ((item.mrp && item.mrp > item.price ? item.mrp : item.price) * (item.qty || 0)), 0);
   const mrpSavings = Math.max(mrpTotal - itemTotal, 0);
-  const freeDeliveryGap = Math.max(499 - itemTotal, 0);
-  const deliveryFee = itemTotal >= 499 ? 0 : getDeliveryFee(distance);
-  const handlingFee = Math.round(itemTotal * 0.03);
+  const shopGroups = cart.reduce<Record<string, number>>((groups, item) => {
+    const key = typeof item.storeId === "object" && item.storeId?._id ? item.storeId._id : typeof item.storeId === "string" ? item.storeId : item.storeName || "MegaMarto";
+    groups[key] = (groups[key] || 0) + item.price * (item.qty || 0);
+    return groups;
+  }, {});
+  const shopTotals = Object.values(shopGroups);
+  const shopCount = shopTotals.length;
+  const deliveryFee = shopTotals.reduce((sum, subtotal) => sum + (subtotal >= 499 ? 0 : 35), 0);
+  const handlingFee = shopCount * 5;
   const total = Math.max(itemTotal + deliveryFee + handlingFee - discount, 0);
   const savings = mrpSavings + discount;
 
   return (
     <div className="zepto-cart">
       <div className="cart-header">
-        <div><span className="cart-kicker">⚡ Delivery in 10–20 mins</span><h2>Your Cart</h2><p>{cart.length} products ready for checkout</p></div>
+        <div><span className="cart-kicker">LOCAL MARKETPLACE</span><h2>Your Cart</h2><p>{cart.length} products from {shopCount} {shopCount === 1 ? "shop" : "shops"}</p></div>
       </div>
 
       {cart.length > 0 && (
         <>
           <div className="save-box">🎉 You save ₹{savings} on this order</div>
-          <div className="delivery-progress">
-            <div><b>{freeDeliveryGap === 0 ? "Free delivery unlocked!" : `Add ₹${freeDeliveryGap} more for free delivery`}</b><span>{freeDeliveryGap === 0 ? "Your delivery fee is on us." : "Free delivery on ₹499+ cart value"}</span></div>
-            <div className="progress-track"><span style={{ width: `${Math.min((itemTotal / 499) * 100, 100)}%` }} /></div>
-          </div>
+          <div className="delivery-progress"><div><b>{shopCount > 1 ? `${shopCount} shop deliveries` : "Single shop delivery"}</b><span>Delivery fee is calculated separately for each shop. Shop orders of ₹499+ get free delivery.</span></div></div>
         </>
       )}
 
@@ -179,7 +173,7 @@ function Cart() {
             </div>
 
             <div className="bill-row">
-              <span>Delivery Fee ({distance} KM)</span>
+              <span>Delivery Fee ({shopCount} {shopCount === 1 ? "shop" : "shops"})</span>
               <b>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</b>
             </div>
 
@@ -203,24 +197,7 @@ function Cart() {
             </div>
           </div>
 
-          <div className="saving-card">
-            <h2>💰 Savings on this order</h2>
-
-            <div className="saving-row">
-              <span>Discount on MRP</span>
-              <b>₹{mrpSavings}</b>
-            </div>
-
-            <div className="saving-row">
-              <span>Delivery Savings</span>
-              <b>₹20</b>
-            </div>
-
-            <div className="saving-row">
-              <span>Handling Savings</span>
-              <b>₹10</b>
-            </div>
-          </div>
+          {savings > 0 && <div className="saving-card"><h2>💰 Your savings</h2><div className="saving-row"><span>MRP + coupon savings</span><b>₹{savings}</b></div></div>}
 
           <button
             className="checkout-btn"

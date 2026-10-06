@@ -14,6 +14,80 @@ const getUserOrders = orderController.getUserOrders;
 const getOrderById = orderController.getOrderById;
 
 /* =====================================================
+   AUTHORITATIVE CART QUOTE
+   URL: POST /orders/quote
+===================================================== */
+router.post("/quote", auth, async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Cart items required" });
+    }
+
+    const ids = [...new Set(items.map((item) => String(item.productId || "")).filter(Boolean))];
+    const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
+      .populate("storeId", "storeName");
+
+    if (products.length !== ids.length) {
+      return res.status(400).json({ message: "One or more products are unavailable" });
+    }
+
+    const productMap = new Map(products.map((p) => [String(p._id), p]));
+    const groups = new Map();
+
+    for (const item of items) {
+      const product = productMap.get(String(item.productId));
+      const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+
+      if (!product || product.stock < qty) {
+        return res.status(409).json({
+          message: (product?.name || "Product") + " has only " + (product?.stock || 0) + " left",
+        });
+      }
+
+      const storeId = product.storeId?._id || product.storeId || null;
+      const key = storeId ? String(storeId) : "admin";
+      if (!groups.has(key)) {
+        groups.set(key, {
+          storeId,
+          storeName: product.storeId?.storeName || product.storeName || "MegaMarto",
+          itemTotal: 0,
+        });
+      }
+      groups.get(key).itemTotal += Number(product.price) * qty;
+    }
+
+    const shops = [...groups.values()].map((group) => {
+      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+      const handlingFee = 5;
+      return {
+        storeId: group.storeId,
+        storeName: group.storeName,
+        itemTotal: group.itemTotal,
+        deliveryFee,
+        handlingFee,
+        total: group.itemTotal + deliveryFee + handlingFee,
+      };
+    });
+
+    const pricing = shops.reduce(
+      (acc, shop) => ({
+        itemTotal: acc.itemTotal + shop.itemTotal,
+        deliveryFee: acc.deliveryFee + shop.deliveryFee,
+        handlingFee: acc.handlingFee + shop.handlingFee,
+        total: acc.total + shop.total,
+      }),
+      { itemTotal: 0, deliveryFee: 0, handlingFee: 0, total: 0 }
+    );
+
+    res.json({ shopCount: shops.length, shops, pricing });
+  } catch (err) {
+    console.log("ORDER QUOTE ERROR:", err);
+    res.status(500).json({ message: "Unable to calculate checkout total" });
+  }
+});
+
+/* =====================================================
    ✅ PLACE ORDER
    URL: POST /orders
 ===================================================== */

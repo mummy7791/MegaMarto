@@ -4,7 +4,7 @@
   grid-template-columns: 280px 1fr;
   background: #f6f7fb;
   font-family: "Outfit", sans-serif;
-  color: #111827;
+  color: #0b2f1c;
 }
 
 .zepto-admin-loading {
@@ -14,7 +14,7 @@
 }
 
 .za-sidebar {
-  background: #111827;
+  background: #0b2f1c;
   color: white;
   padding: 28px 22px;
   min-height: 100vh;
@@ -25,7 +25,7 @@
 .za-logo {
   font-size: 30px;
   font-weight: 900;
-  color: #a855f7;
+  color: #22a35a;
 }
 
 .za-subtitle {
@@ -37,7 +37,7 @@
 .za-sidebar button {
   width: 100%;
   border: none;
-  background: #1f2937;
+  background: #123d27;
   color: white;
   padding: 17px 18px;
   border-radius: 18px;
@@ -49,7 +49,7 @@
 }
 
 .za-sidebar button.active {
-  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  background: linear-gradient(135deg, #22a35a, #176b3a);
   box-shadow: 0 12px 24px rgba(168, 85, 247, 0.25);
 }
 
@@ -106,8 +106,8 @@
 }
 
 .za-admin-user {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #eaf7ef;
+  color: #176b3a;
   padding: 14px 20px;
   border-radius: 30px;
   font-weight: 900;
@@ -144,7 +144,7 @@
 }
 
 .purple {
-  background: linear-gradient(135deg, #7e22ce, #a855f7);
+  background: linear-gradient(135deg, #176b3a, #22a35a);
 }
 
 .green {
@@ -190,8 +190,8 @@
 .za-card-head span,
 .za-card-head button {
   border: none;
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #eaf7ef;
+  color: #176b3a;
   padding: 10px 15px;
   border-radius: 18px;
   font-weight: 900;
@@ -204,13 +204,13 @@
   align-items: end;
   gap: 22px;
   padding: 24px;
-  background: linear-gradient(180deg, #faf5ff, #ffffff);
+  background: linear-gradient(180deg, #f3faf5, #ffffff);
   border-radius: 24px;
 }
 
 .za-chart div {
   flex: 1;
-  background: linear-gradient(180deg, #a855f7, #7e22ce);
+  background: linear-gradient(180deg, #22a35a, #176b3a);
   border-radius: 20px 20px 6px 6px;
   animation: chartGrow 0.8s ease;
 }
@@ -290,12 +290,12 @@
 
 .za-status.picked_up {
   background: #ede9fe;
-  color: #6d28d9;
+  color: #176b3a;
 }
 
 .za-status.out_for_delivery {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #eaf7ef;
+  color: #176b3a;
 }
 
 .za-page-card {
@@ -323,7 +323,7 @@
 .za-delivery-form input:focus,
 .za-page-card input:focus,
 .za-page-card select:focus {
-  border-color: #a855f7;
+  border-color: #22a35a;
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12);
 }
 
@@ -458,3 +458,13 @@
     grid-template-columns: 1fr;
   }
 }
+.admin-orders{padding:4px}
+.admin-orders-head{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:18px}
+.admin-orders-head span{font-size:11px;font-weight:900;letter-spacing:.12em;color:#176b3a}
+.admin-orders-head h2{margin:4px 0;font-size:24px}
+.admin-orders-head p{margin:0;color:#64748b}
+.admin-orders-head button{border:0;background:#176b3a;color:#fff;padding:11px 16px;border-radius:12px;font-weight:800;cursor:pointer}
+.admin-order-card{background:#fff;padding:16px;margin-bottom:12px;border:1px solid #e2ece6;border-radius:16px;box-shadow:0 5px 16px rgba(15,77,42,.06)}
+.admin-order-meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.admin-order-meta span{background:#eef8f2;color:#176b3a;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}
+@media(max-width:700px){.admin-orders-head{align-items:flex-start;flex-direction:column}.admin-orders-head button{width:100%}}

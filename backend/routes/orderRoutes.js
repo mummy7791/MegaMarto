@@ -221,17 +221,7 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
   try {
     const { status } = req.body;
 
-    const allowedStatus = [
-      "PLACED",
-      "STORE_PENDING",
-      "STORE_ACCEPTED",
-      "STORE_CANCELLED",
-      "ASSIGNED",
-      "DELIVERY_ACCEPTED",
-      "PICKED_UP",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED",
-    ];
+    const allowedStatus = ["STORE_ACCEPTED", "STORE_CANCELLED"];
 
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -242,6 +232,8 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
+
+    if (order.status !== "STORE_PENDING") return res.status(409).json({ message: "Only pending shop orders can be updated here" });
 
     order.status = status;
 

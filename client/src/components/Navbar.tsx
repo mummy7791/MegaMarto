@@ -144,7 +144,7 @@ function Navbar() {
 
       <div className="mm-navbar">
         <button className="mm-logo" onClick={() => goTo("/")} aria-label="MegaMarto home">
-          <span className="mm-logo-mark">M</span>
+          <img className="mm-logo-mark" src="/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png" alt="MegaMarto logo" style={{ objectFit: "contain", background: "white" }} />
           <span className="mm-logo-copy">
             <b>MegaMarto</b>
             <small>Smart grocery shopping</small>

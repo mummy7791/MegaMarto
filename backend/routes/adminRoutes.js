@@ -369,41 +369,6 @@ router.get("/delivery/my-orders", auth, async (req, res) => {
 /* =======================================================
    🚴 UPDATE DELIVERY STATUS
 ======================================================= */
-router.put("/delivery-status/:id", auth, async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    const validStatuses = [
-      "ASSIGNED",
-      "DELIVERY_ACCEPTED",
-      "PICKED_UP",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED",
-    ];
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid delivery status" });
-    }
-
-    const order = await Order.findById(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    order.status = status;
-    await order.save();
-
-    if (global.io) {
-      global.io.emit("orderUpdated", order);
-    }
-
-    res.json({ message: "Updated successfully", order });
-  } catch (err) {
-    console.log("DELIVERY STATUS ERROR:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 /* =======================================================
    💰 STORE SETTLEMENT SUMMARY
 ======================================================= */

@@ -146,3 +146,9 @@
   .mm-logo-mark{width:38px;height:38px;border-radius:12px}
   .mm-search{grid-column:1/-1;grid-row:2;height:44px}
 }
+
+/* Official MegaMarto logo uploaded to public */
+.mm-logo{min-width:0;flex-shrink:0}
+.mm-brand-image{display:block;width:225px;max-width:100%;height:58px;object-fit:contain;object-position:left center}
+@media(max-width:1050px){.mm-brand-image{width:175px;height:50px}}
+@media(max-width:600px){.mm-brand-image{width:150px;height:44px}}

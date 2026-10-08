@@ -395,7 +395,7 @@ function Home() {
       </section>
 
       <footer className="mm-footer">
-        <div className="mm-footer-brand"><span>M</span><div><h2>MegaMarto</h2><p>Fresh groceries, daily essentials and fast delivery.</p></div></div>
+        <div className="mm-footer-brand"><img className="mm-footer-logo" src="/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png" alt="MegaMarto Smart Grocery Shopping" /><div><p>Fresh groceries, daily essentials and fast delivery.</p></div></div>
 
         <div className="mm-footer-benefits">
           <span>🚀 10 Min Delivery</span>

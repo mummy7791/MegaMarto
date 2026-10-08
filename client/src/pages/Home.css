@@ -123,3 +123,5 @@
 @media(max-width:900px){.mm-hero-left{min-height:380px;padding:28px}.mm-footer-searches{grid-template-columns:1fr}.mm-product-info{min-height:138px}}
 @media(max-width:620px){.mm-hero{padding-top:10px}.mm-hero-left{min-height:475px;padding:24px 20px}.mm-hero-left h1{font-size:36px}.mm-section{padding-top:18px;padding-bottom:18px}.mm-product-img{aspect-ratio:1/1}.mm-product-info{min-height:150px}.mm-footer{margin-top:18px;padding:22px 20px;border-radius:20px}.mm-footer-benefits{grid-template-columns:1fr 1fr}}
 \n.mm-seller{display:block;margin:3px 0 7px;color:#176b3a;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n
+.mm-footer-brand .mm-footer-logo{display:block;width:245px;max-width:55vw;height:auto;object-fit:contain;background:white;border-radius:12px;padding:7px}
+@media(max-width:600px){.mm-footer-brand .mm-footer-logo{width:175px}}

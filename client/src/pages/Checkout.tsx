@@ -109,7 +109,7 @@ function Checkout() {
   const [loading, setLoading] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("RAZORPAY");
+    useState<PaymentMethod>("COD");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
 
   const [cart] = useState<Product[]>(() => {
@@ -363,6 +363,10 @@ function Checkout() {
   const placeOrderAfterPayment = async () => {
     try {
       setLoading(true);
+      if (paymentMethod === "RAZORPAY") {
+        toast.error("Online payments are temporarily unavailable. Please select Cash on Delivery.");
+        return;
+      }
 
       if (paymentMethod === "COD") {
         await placeFinalOrder("COD", "PENDING");
@@ -567,7 +571,7 @@ function Checkout() {
               <button
                 type="button"
                 className={paymentMethod === "RAZORPAY" ? "active" : ""}
-                onClick={() => setPaymentMethod("RAZORPAY")}
+                onClick={() => toast.error("Online payments are temporarily unavailable. Please use Cash on Delivery.")}
               >
                 💳 Razorpay
               </button>

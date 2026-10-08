@@ -95,6 +95,11 @@ app.use("/store", storeRoutes);
 /* ================= RAZORPAY PAYMENT ROUTES ================= */
 
 // CREATE RAZORPAY ORDER
+app.post("/payment/create-order", auth, async (_req, res) => {
+  return res.status(503).json({ message: "Online payments are temporarily paused until server-side order verification is ready. Please use Cash on Delivery." });
+});
+
+/* Legacy payment-order implementation intentionally disabled.
 app.post("/payment/create-order", async (req, res) => {
   try {
     const { amount } = req.body;
@@ -116,6 +121,7 @@ app.post("/payment/create-order", async (req, res) => {
   }
 });
 
+*/
 // VERIFY RAZORPAY PAYMENT
 app.post("/payment/verify", (req, res) => {
   try {

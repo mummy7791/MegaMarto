@@ -33,14 +33,12 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
     const stores = await Store.find();
     const deliveryBoys = await DeliveryBoy.find();
 
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const adminCommission = eligibleOrders.reduce(
-      (sum, o) => sum + (o.adminCommission || 0),
-      0
-    );
+    const eligibleOrders = orders.filter(o => o.status === "DELIVERED" && o.paymentStatus === "PAID");
+    const totalRevenue = eligibleOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const adminCommission = eligibleOrders.reduce((sum, o) => sum + (o.adminCommission || 0), 0);
     const storeAmount = eligibleOrders.reduce((sum, o) => sum + (o.storeAmount || 0), 0);
-    const pendingSettlement = orders
-      .filter((o) => o.settlementStatus === "PENDING")
+    const pendingSettlement = eligibleOrders
+      .filter(o => o.settlementStatus === "PENDING")
       .reduce((sum, o) => sum + (o.storeAmount || 0), 0);
 
     res.json({

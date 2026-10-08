@@ -16,6 +16,8 @@ type Product = {
 function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
 
   const tokenRef = useRef(localStorage.getItem("adminToken"));
 
@@ -93,13 +95,26 @@ function ProductsPage() {
     }
   };
 
+  const visible = products.filter(p => {
+    const matches = `${p.name} ${p.category} ${p.storeName || ""}`.toLowerCase().includes(search.toLowerCase());
+    return matches && (filter === "all" || (filter === "low" && p.stock > 0 && p.stock <= 5) || (filter === "out" && p.stock === 0) || (filter === "hidden" && p.isAvailable === false));
+  });
+
   return (
     <div style={{ padding: 20 }}>
-      <h2>📦 Products</h2>
+      <h2>📦 Inventory Management</h2>
+      <p>{products.length} products · {products.filter(p => p.stock <= 5).length} low/out of stock</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+        <input aria-label="Search inventory" placeholder="Search product, category, store" value={search} onChange={e => setSearch(e.target.value)} style={{ flex: "1 1 220px" }} />
+        <select aria-label="Filter inventory" value={filter} onChange={e => setFilter(e.target.value)}>
+          <option value="all">All products</option><option value="low">Low stock (1–5)</option><option value="out">Out of stock</option><option value="hidden">Unavailable</option>
+        </select>
+        <button onClick={() => void fetchProducts()}>Refresh</button>
+      </div>
 
       {/* PRODUCTS LIST */}
       <div style={{ display: "grid", gap: 10 }}>
-        {products.map((p) => (
+        {visible.map((p) => (
           <div
             key={p._id}
             style={{
@@ -125,6 +140,7 @@ function ProductsPage() {
         ))}
       </div>
 
+      {visible.length === 0 && <p>No matching products found.</p>}
       {/* EDIT MODAL */}
       {editing && (
         <div
@@ -132,12 +148,14 @@ function ProductsPage() {
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
+            padding: 16,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
-          <div style={{ background: "white", padding: 20, borderRadius: 10 }}>
+          <div style={{ background: "white", padding: 20, borderRadius: 10, width: "min(100%, 480px)", maxHeight: "90vh", overflowY: "auto" }}>
             <h3>Edit Product</h3>
 
             <input

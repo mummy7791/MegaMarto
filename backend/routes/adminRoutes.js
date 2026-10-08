@@ -156,6 +156,15 @@ router.get("/stores/:id/products", auth, adminOnly, async (req, res) => {
   }
 });
 
+router.get("/products", auth, adminOnly, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Unable to load inventory" });
+  }
+});
+
 /* =======================================================
    📦 ADMIN UPDATE ANY PRODUCT
 ======================================================= */

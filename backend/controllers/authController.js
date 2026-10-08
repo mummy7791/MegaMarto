@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 /* ================= REGISTER ================= */
 exports.register = async (req, res) => {
   try {
-    const { name, email, mobile, password, role } = req.body;
+    const { name, email, mobile, password } = req.body;
 
     if (!name || !email || !mobile || !password) {
       return res.status(400).json({
@@ -36,7 +36,7 @@ exports.register = async (req, res) => {
       email: cleanEmail,
       mobile: cleanMobile,
       password: hash,
-      role: role || "user",
+      role: "user",
     });
 
     res.status(201).json({
@@ -113,38 +113,6 @@ exports.login = async (req, res) => {
 };
 
 /* ================= FORGOT PASSWORD ================= */
-exports.forgotPassword = async (req, res) => {
-  try {
-    const { mobile, newPassword } = req.body;
-
-    if (!mobile || !newPassword) {
-      return res.status(400).json({
-        message: "Mobile number and new password are required",
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        message: "Password must be at least 6 characters",
-      });
-    }
-
-    const user = await User.findOne({ mobile: mobile.trim() });
-
-    if (!user) {
-      return res.status(404).json({
-        message: "Mobile number not registered",
-      });
-    }
-
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
-
-    res.json({
-      message: "Password reset successfully",
-    });
-  } catch (err) {
-    console.log("FORGOT PASSWORD ERROR:", err);
-    res.status(500).json({ message: "Password reset failed" });
-  }
+exports.forgotPassword = async (_req, res) => {
+  return res.status(403).json({ message: "Password reset is temporarily unavailable until verified OTP recovery is enabled. Contact support." });
 };

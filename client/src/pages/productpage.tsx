@@ -7,13 +7,17 @@ type Product = {
   image: string;
   category: string;
   stock: number;
+  mrp?: number;
+  unit?: string;
+  isAvailable?: boolean;
+  storeName?: string;
 };
 
 function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
 
-  const tokenRef = useRef(localStorage.getItem("token"));
+  const tokenRef = useRef(localStorage.getItem("adminToken"));
 
   // prevent duplicate calls
   const isFetched = useRef(false);
@@ -21,7 +25,7 @@ function ProductsPage() {
   // ✅ FETCH PRODUCTS (safe + stable)
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch("https://megamarto-backend.onrender.com/products", {
+      const res = await fetch("https://megamarto-backend.onrender.com/admin/products", {
         headers: {
           Authorization: `Bearer ${tokenRef.current}`,
         },
@@ -51,13 +55,15 @@ function ProductsPage() {
   // ❌ DELETE PRODUCT
   const deleteProduct = async (id: string) => {
     try {
-      await fetch(`https://megamarto-backend.onrender.com/products/${id}`, {
+      if (!window.confirm("Delete this product permanently?")) return;
+      const response = await fetch(`https://megamarto-backend.onrender.com/admin/products/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${tokenRef.current}`,
         },
       });
 
+      if (!response.ok) { window.alert("Delete failed"); return; }
       fetchProducts();
     } catch (err) {
       console.log(err);
@@ -69,7 +75,8 @@ function ProductsPage() {
     if (!editing) return;
 
     try {
-      await fetch(`https://megamarto-backend.onrender.com/products/${editing._id}`, {
+      if (!Number.isInteger(editing.stock) || editing.stock < 0 || editing.price <= 0 || (editing.mrp || editing.price) < editing.price) { window.alert("Enter valid price, MRP and stock"); return; }
+      const response = await fetch(`https://megamarto-backend.onrender.com/admin/products/${editing._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -78,6 +85,7 @@ function ProductsPage() {
         body: JSON.stringify(editing),
       });
 
+      if (!response.ok) { window.alert("Product update failed"); return; }
       setEditing(null);
       fetchProducts();
     } catch (err) {
@@ -108,7 +116,7 @@ function ProductsPage() {
             <div style={{ flex: 1 }}>
               <b>{p.name}</b>
               <p>₹{p.price}</p>
-              <p>Stock: {p.stock}</p>
+              <p>Stock: {p.stock} {p.stock <= 5 ? "⚠ Low stock" : ""}</p><p>{p.unit || "1 pack"} · MRP ₹{p.mrp || p.price} · {p.storeName || "Marketplace"}</p>
             </div>
 
             <button onClick={() => setEditing(p)}>✏️ Edit</button>
@@ -156,6 +164,9 @@ function ProductsPage() {
               placeholder="Image"
             />
 
+            <input placeholder="MRP" type="number" value={editing.mrp ?? editing.price} onChange={(e) => setEditing({ ...editing, mrp: Number(e.target.value) })} />
+            <input placeholder="Unit" value={editing.unit || ""} onChange={(e) => setEditing({ ...editing, unit: e.target.value })} />
+            <label><input type="checkbox" checked={editing.isAvailable !== false} onChange={(e) => setEditing({ ...editing, isAvailable: e.target.checked })} /> Available for sale</label>
             <input
               value={editing.stock}
               onChange={(e) =>

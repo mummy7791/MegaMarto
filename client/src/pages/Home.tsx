@@ -54,39 +54,16 @@ const categories = [
 ];
 
 const heroSlides = [
-  {
-    tag: "🌿 Fresh • Healthy • Everyday",
-    title: "Fresh groceries",
-    highlight: "at your doorstep",
-    text: "Fresh fruits, dairy, snacks, beauty, home essentials and daily needs delivered fast.",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400",
-    color: "slide-purple",
-  },
-  {
-    tag: "🥬 Fresh Today",
-    title: "Farm-fresh goodness",
-    highlight: "for every home",
-    text: "Daily fresh vegetables and fruits delivered to your doorstep.",
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1400",
-    color: "slide-green",
-  },
-  {
-    tag: "🎁 FIRST50",
-    title: "Make every basket",
-    highlight: "a little happier",
-    text: "Use coupon FIRST50 and save more on your first MegaMarto order.",
-    image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=1400",
-    color: "slide-pink",
-  },
+  {image: "/Fresh%20Groceries%20at%20Your%20Doorstep-1.png", alt: "Fresh groceries at your doorstep"},
+  {image: "/Fresh%20Groceries%20Delivered%20Home-2.png", alt: "Fresh groceries delivered home"},
+  {image: "/Fresh%20Groceries%20Delivered%20Daily-3.png", alt: "Fresh groceries delivered daily"},
+  {image: "/MegaMarto%20Fresh%20Groceries%20Delivered.png", alt: "MegaMarto fresh grocery shopping"},
 ];
-
-
 
 function Home() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [search] = useState("");
   const [selected, setSelected] = useState("All");
   const [slide, setSlide] = useState(0);
 
@@ -174,55 +151,36 @@ function Home() {
     return products.filter((p) => {
       const name = p.name.toLowerCase();
       const cat = (p.category || "").toLowerCase();
-      const q = search.toLowerCase();
-
-      const searchOk = name.includes(q) || cat.includes(q);
-
-      if (selected === "All") return searchOk;
+      if (selected === "All") return true;
 
       const keys = categoryMap[selected] || [selected.toLowerCase()];
 
       const catOk = keys.some((k) => name.includes(k) || cat.includes(k));
 
-      return searchOk && catOk;
+      return catOk;
     });
-  }, [products, search, selected]);
+  }, [products, selected]);
 
   const currentSlide = heroSlides[slide];
   const fallbackImage = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600";
 
   return (
     <main className="mm-home">
-      <section className="mm-hero mm-hero-premium" aria-label="MegaMarto featured offers">
-        <div className="mm-hero-left">
-          <div className="mm-hero-copy">
-            <span className="mm-pill">{currentSlide.tag}</span>
-            <h1>{currentSlide.title}<b>{currentSlide.highlight}</b></h1>
-            <p>{currentSlide.text}</p>
-            <div className="mm-hero-benefits">
-              <span>🌿 Fresh picks</span><span>🛡️ Secure checkout</span><span>🛍️ Everyday essentials</span>
-            </div>
-            <button className="mm-shop-now" onClick={() => document.getElementById("mm-popular")?.scrollIntoView({ behavior: "smooth" })}>Shop now <span aria-hidden="true">→</span></button>
-          </div>
-          <img className="mm-hero-photo" src={currentSlide.image} alt="Fresh groceries and everyday essentials" />
-          <div className="mm-hero-coupon">
-            <span>🎁 WELCOME OFFER</span><strong>FIRST50</strong>
-            <b>Flat ₹50 OFF</b><small>On your first order · Apply at checkout when available</small>
-          </div>
-          <div className="mm-slider-controls">
-            <button aria-label="Previous promotion" onClick={() => setSlide((slide - 1 + heroSlides.length) % heroSlides.length)}>‹</button>
-            <div>{heroSlides.map((_, index) => (
-              <button key={index} aria-label={`Show promotion ${index + 1}`} aria-current={slide === index ? "true" : undefined} className={slide === index ? "active" : ""} onClick={() => setSlide(index)} />
-            ))}</div>
-            <button aria-label="Next promotion" onClick={() => setSlide((slide + 1) % heroSlides.length)}>›</button>
+      <section className="mm-banner-section" aria-label="MegaMarto grocery offers">
+        <div className="mm-banner-shell">
+          <img className="mm-banner-img" src={currentSlide.image} alt={currentSlide.alt} fetchPriority={slide === 0 ? "high" : "auto"} />
+          <button type="button" className="mm-banner-arrow mm-banner-prev" aria-label="Previous banner" onClick={() => setSlide((slide - 1 + heroSlides.length) % heroSlides.length)}>‹</button>
+          <button type="button" className="mm-banner-arrow mm-banner-next" aria-label="Next banner" onClick={() => setSlide((slide + 1) % heroSlides.length)}>›</button>
+          <div className="mm-banner-dots" aria-label="Choose a banner">
+            {heroSlides.map((item, index) => <button type="button" key={item.image} aria-label={`Show banner ${index + 1}`} aria-current={slide === index ? "true" : undefined} className={slide === index ? "active" : ""} onClick={() => setSlide(index)} />)}
           </div>
         </div>
       </section>
-      <section className="mm-trust-strip" aria-label="Why shop with MegaMarto">
-        <div><span>🚚</span><p><b>Convenient delivery</b><small>Groceries brought to your door</small></p></div>
-        <div><span>🥬</span><p><b>Fresh & quality picks</b><small>Everyday essentials in one place</small></p></div>
-        <div><span>🔐</span><p><b>Secure payments</b><small>Convenient checkout options</small></p></div>
-        <div><span>💚</span><p><b>Shop with confidence</b><small>Find your everyday favorites</small></p></div>
+      <section className="mm-trust-strip" aria-label="Why shop MegaMarto">
+        <div><span>🚚</span><p><b>Easy doorstep delivery</b><small>Groceries brought to your home</small></p></div>
+        <div><span>✅</span><p><b>Fresh quality products</b><small>Shop everyday essentials</small></p></div>
+        <div><span>💳</span><p><b>Convenient payments</b><small>Choose supported checkout options</small></p></div>
+        <div><span>🛍️</span><p><b>Popular grocery picks</b><small>Explore products from local shops</small></p></div>
       </section>
 
       <nav className="mm-tabs">
@@ -261,7 +219,7 @@ function Home() {
       <section className="mm-section" id="mm-popular">
         <div className="mm-section-head">
           <h2>{selected === "All" ? "Popular Products" : selected}</h2>
-          <button>See All ›</button>
+          <button onClick={() => setSelected("All")}>See All ›</button>
         </div>
 
         <div className="mm-product-grid">

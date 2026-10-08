@@ -30,6 +30,7 @@ router.post("/quote", auth, async (req, res) => {
       const qty = Number(item.qty);
       if (!/^[a-f0-9]{24}$/i.test(id) || !Number.isSafeInteger(qty) || qty < 1 || qty > 100) return res.status(400).json({ message: "Invalid product or quantity" });
       requested.set(id, (requested.get(id) || 0) + qty);
+      if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
     }
     const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
@@ -112,16 +113,23 @@ router.post("/", auth, async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ message: "Cart items required" });
     if (!address?.name || !address?.phone || !address?.street || !address?.city || !address?.pincode) return res.status(400).json({ message: "Complete delivery address required" });
 
-    const ids = [...new Set(items.map((item) => String(item.productId || "")).filter(Boolean))];
+    const requested = new Map();
+    for (const item of items) {
+      const id = String(item.productId || "");
+      const qty = Number(item.qty);
+      if (!/^[a-f0-9]{24}$/i.test(id) || !Number.isSafeInteger(qty) || qty < 1 || qty > 100) return res.status(400).json({ message: "Invalid product or quantity" });
+      requested.set(id, (requested.get(id) || 0) + qty);
+      if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
+    }
+    const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName");
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
     const groups = new Map();
 
-    for (const item of items) {
-      const product = productMap.get(String(item.productId));
-      const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+    for (const [id, qty] of requested) {
+      const product = productMap.get(id);
       if (!product || product.stock < qty) return res.status(409).json({ message: (product?.name || "Product") + " has only " + (product?.stock || 0) + " left" });
 
       const storeId = product.storeId?._id || product.storeId || null;

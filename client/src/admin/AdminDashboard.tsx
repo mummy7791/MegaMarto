@@ -66,6 +66,8 @@ export default function AdminDashboard() {
   const [productForm, setProductForm] = useState({
     name: "",
     price: "",
+    mrp: "",
+    unit: "1 pack",
     image: "",
     category: "Grocery",
     stock: "10",

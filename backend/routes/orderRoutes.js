@@ -100,6 +100,9 @@ router.post("/quote", auth, async (req, res) => {
 router.post("/", auth, async (req, res) => {
   try {
     const { items, address, location, paymentMethod, paymentStatus, paymentId } = req.body;
+    if (!["COD", "RAZORPAY"].includes(paymentMethod)) return res.status(400).json({ message: "Invalid payment method" });
+    if (paymentMethod === "COD" && (paymentStatus === "PAID" || paymentId)) return res.status(400).json({ message: "COD cannot be marked paid in checkout" });
+    if (paymentMethod === "RAZORPAY") return res.status(503).json({ message: "Online checkout temporarily unavailable pending secure payment verification" });
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ message: "Cart items required" });
     if (!address?.name || !address?.phone || !address?.street || !address?.city || !address?.pincode) return res.status(400).json({ message: "Complete delivery address required" });
 
@@ -138,7 +141,7 @@ router.post("/", auth, async (req, res) => {
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
         commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
-        paymentMethod: paymentMethod || "COD", paymentStatus: paymentStatus || "PENDING", paymentId: paymentId || "",
+        paymentMethod, paymentStatus: "PENDING", paymentId: "",
       });
       createdOrders.push(order);
     }
@@ -246,6 +249,10 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
     }
 
     await order.save();
+    if (status === "STORE_CANCELLED") {
+      for (const item of order.items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.qty } });
+      if (global.io) global.io.emit("inventoryUpdated", { productIds: order.items.map(item => item.productId) });
+    }
 
     if (global.io) {
       global.io.emit("orderUpdated", order);

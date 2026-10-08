@@ -64,7 +64,7 @@ router.get("/available-orders", auth, async (req, res) => {
     }
 
     const orders = await Order.find({
-      status: { $in: ["STORE_ACCEPTED", "ASSIGNED"] },
+      $or: [{ status: "STORE_ACCEPTED", deliveryBoy: null }, { status: "ASSIGNED", deliveryBoy: req.user.id }],
     })
       .populate("storeId", "storeName address phone location")
       .sort({ createdAt: -1 });
@@ -86,25 +86,12 @@ router.put("/accept-order/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Delivery only access" });
     }
 
-    const order = await Order.findOne({
-      _id: req.params.id,
-      status: { $in: ["STORE_ACCEPTED", "ASSIGNED"] },
-    });
-
-    if (!order) {
-      return res.status(400).json({
-        message: "Order already accepted by another delivery boy",
-      });
-    }
-
-    if (order.status === "ASSIGNED" && String(order.deliveryBoy) !== String(req.user.id)) {
-      return res.status(403).json({ message: "This order is assigned to another delivery partner" });
-    }
-
-    order.deliveryBoy = req.user.id;
-    order.status = "DELIVERY_ACCEPTED";
-
-    await order.save();
+    const order = await Order.findOneAndUpdate(
+      { _id: req.params.id, $or: [{ status: "STORE_ACCEPTED", deliveryBoy: null }, { status: "ASSIGNED", deliveryBoy: req.user.id }] },
+      { $set: { deliveryBoy: req.user.id, status: "DELIVERY_ACCEPTED" } },
+      { new: true }
+    );
+    if (!order) return res.status(409).json({ message: "Order unavailable or assigned to another partner" });
 
     const updatedOrder = await Order.findById(order._id)
       .populate("storeId", "storeName address phone location")

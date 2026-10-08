@@ -207,46 +207,8 @@ router.put("/delivery-status/:id", auth, async (req, res) => {
   }
 });
 
-/* =========================================
-   👑 ADMIN: ASSIGN ORDER
-========================================= */
-router.put("/assign-order/:orderId", auth, adminOnly, async (req, res) => {
-  try {
-    const { deliveryBoyId } = req.body;
+/* Admin assignment is handled exclusively by /admin/assign-order/:orderId. */
 
-    const order = await Order.findById(req.params.orderId);
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    order.deliveryBoy = deliveryBoyId;
-    order.status = "DELIVERY_ACCEPTED";
-
-    await order.save();
-
-    const updatedOrder = await Order.findById(order._id)
-      .populate("storeId", "storeName address phone location")
-      .populate("deliveryBoy", "name phone bikeNumber");
-
-    if (global.io) {
-      global.io.emit("orderUpdated", updatedOrder);
-      global.io.emit("deliveryAcceptedOrder", updatedOrder);
-    }
-
-    res.json({
-      message: "Order assigned successfully",
-      order: updatedOrder,
-    });
-  } catch (err) {
-    console.log("ADMIN ASSIGN ERROR:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-/* =========================================
-   👑 ADMIN: GET DELIVERY BOYS
-========================================= */
 router.get("/delivery-boys", auth, adminOnly, async (req, res) => {
   try {
     const boys = await DeliveryBoy.find().select("-password");

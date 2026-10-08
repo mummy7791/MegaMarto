@@ -7,6 +7,8 @@ const { Server } = require("socket.io");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+const auth = require("./middleware/auth");
+const adminOnly = require("./middleware/admin");
 
 /* ================= ROUTES ================= */
 const authRoutes = require("./routes/authRoutes");
@@ -82,40 +84,7 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ================= TEMP CREATE ADMIN ================= */
-app.post("/create-admin", async (req, res) => {
-  try {
-    const exists = await User.findOne({ email: "admin@gmail.com" });
-
-    if (exists) {
-      return res.json({
-        message: "Admin already exists",
-        email: "admin@gmail.com",
-        password: "123456",
-      });
-    }
-
-    const password = await bcrypt.hash("123456", 10);
-
-    const admin = await User.create({
-      name: "Admin",
-      email: "admin@gmail.com",
-      password,
-      role: "admin",
-    });
-
-    res.json({
-      message: "Admin created successfully",
-      email: "admin@gmail.com",
-      password: "123456",
-      admin,
-    });
-  } catch (err) {
-    console.log("CREATE ADMIN ERROR:", err);
-    res.status(500).json({ message: "Create admin failed" });
-  }
-});
-
+/* Admin bootstrap disabled: provision admins through a secure operational process. */
 /* ================= ROUTES ================= */
 app.use("/", authRoutes);
 app.use("/orders", orderRoutes);
@@ -230,12 +199,12 @@ app.get("/products/:id", async (req, res) => {
 });
 
 // ADMIN DIRECT ADD PRODUCT
-app.post("/products", async (req, res) => {
+app.post("/products", auth, adminOnly, async (req, res) => {
   try {
     const product = await Product.create({
-      ...req.body,
-      storeName: req.body.storeName || "Admin Store",
-      storeId: req.body.storeId || null,
+      ...Object.fromEntries(Object.entries(req.body).filter(([key]) => ["name","price","mrp","unit","image","category","stock","description","isAvailable","featured","tags"].includes(key))),
+      storeName: "Admin Store",
+      storeId: null,
     });
 
     if (global.io) {

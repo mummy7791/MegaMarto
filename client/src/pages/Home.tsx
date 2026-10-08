@@ -86,7 +86,7 @@ function Home() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
   const [selected, setSelected] = useState("All");
   const [slide, setSlide] = useState(0);
 

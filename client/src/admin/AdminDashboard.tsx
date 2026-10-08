@@ -33,13 +33,15 @@ type DeliveryBoy = {
   bikeNumber?: string;
 };
 
+type Settlement = { storeId: string; storeName: string; totalOrders: number; totalSales: number; adminCommission: number; pendingAmount: number; paidAmount: number };
 type TabType =
   | "dashboard"
   | "stores"
   | "add"
   | "products"
   | "orders"
-  | "delivery";
+  | "delivery"
+  | "settlements";
 
 const API = "https://megamarto-backend.onrender.com";
 
@@ -58,10 +60,14 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [boys, setBoys] = useState<DeliveryBoy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [settling, setSettling] = useState<string | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: "",
     price: "",
+    mrp: "",
+    unit: "1 pack",
     image: "",
     category: "Grocery",
     stock: "10",
@@ -94,15 +100,17 @@ export default function AdminDashboard() {
         return;
       }
 
-      const [statsRes, ordersRes, boysRes] = await Promise.all([
+      const [statsRes, ordersRes, boysRes, settlementsRes] = await Promise.all([
         fetch(`${API}/admin/stats`, { headers: authHeaders }),
         fetch(`${API}/admin/orders`, { headers: authHeaders }),
         fetch(`${API}/admin/delivery-boys`, { headers: authHeaders }),
+        fetch(`${API}/admin/settlements`, { headers: authHeaders }),
       ]);
 
       const statsData = await statsRes.json();
       const ordersData = await ordersRes.json();
       const boysData = await boysRes.json();
+      if (settlementsRes.ok) { const data = await settlementsRes.json(); setSettlements(Array.isArray(data) ? data : []); }
 
       if (statsRes.ok) setStats(statsData);
       setOrders(Array.isArray(ordersData) ? ordersData : []);
@@ -130,8 +138,8 @@ export default function AdminDashboard() {
   };
 
   const addProduct = async () => {
-    if (!productForm.name || !productForm.price) {
-      toast.error("Please fill product name and price");
+    if (!productForm.name || Number(productForm.price) <= 0 || Number(productForm.mrp || productForm.price) < Number(productForm.price) || !Number.isInteger(Number(productForm.stock)) || Number(productForm.stock) < 0) {
+      toast.error("Enter valid price, MRP (at least selling price), and non-negative whole-number stock");
       return;
     }
 
@@ -141,6 +149,7 @@ export default function AdminDashboard() {
       body: JSON.stringify({
         ...productForm,
         price: Number(productForm.price),
+        mrp: Number(productForm.mrp || productForm.price),
         stock: Number(productForm.stock),
         isAvailable: true,
       }),
@@ -159,6 +168,8 @@ export default function AdminDashboard() {
       name: "",
       price: "",
       image: "",
+      mrp: "",
+      unit: "1 pack",
       category: "Grocery",
       stock: "10",
       description: "",
@@ -200,6 +211,19 @@ export default function AdminDashboard() {
     await loadAdminData();
   };
 
+  const paySettlement = async (store: Settlement) => {
+    if (!store.pendingAmount || !window.confirm(`Confirm ₹${store.pendingAmount} paid to ${store.storeName}? Only confirm after the actual transfer.`)) return;
+    setSettling(store.storeId);
+    try {
+      const response = await fetch(`${API}/admin/settlements/${store.storeId}/pay`, { method: "PUT", headers: authHeaders });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Settlement update failed");
+      toast.success("Settlement marked paid");
+      await loadAdminData();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Settlement failed"); }
+    finally { setSettling(null); }
+  };
+
   const revenue = stats.totalRevenue || orders.reduce((s, o) => s + o.total, 0);
   const delivered = orders.filter((o) => o.status === "DELIVERED").length;
   const activeOrders = orders.filter((o) => o.status !== "DELIVERED").length;
@@ -219,6 +243,7 @@ export default function AdminDashboard() {
         <button className={tab === "add" ? "active" : ""} onClick={() => setTab("add")}>➕ Add Product</button>
         <button className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>📦 Products</button>
         <button className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}>🧾 Orders</button>
+        <button className={tab === "settlements" ? "active" : ""} onClick={() => setTab("settlements")}>💼 Settlements</button>
         <button className={tab === "delivery" ? "active" : ""} onClick={() => setTab("delivery")}>🚴 Delivery Boys</button>
 
         <button className="za-logout" onClick={logoutAdmin}>Logout</button>
@@ -229,11 +254,14 @@ export default function AdminDashboard() {
           <div>
             <h1>
               {tab === "dashboard" && "Dashboard"}
-              {tab === "stores" && "Stores"}
+              {tab === "settlements" && <section className="za-card za-page-card"><div className="za-card-head"><h2>Store Commission & Payouts</h2><button onClick={() => void loadAdminData()}>Refresh</button></div><p>Only delivered and paid orders qualify. Confirm bank/UPI transfer before marking a payout paid.</p><div className="za-settlement-list">{settlements.length === 0 ? <p>No store settlements yet.</p> : settlements.map(store => <article className="za-settlement" key={store.storeId}><div><h3>{store.storeName}</h3><small>{store.totalOrders} total orders</small></div><div><small>Sales</small><b>₹{store.totalSales.toLocaleString("en-IN")}</b></div><div><small>MegaMarto commission</small><b>₹{store.adminCommission.toLocaleString("en-IN")}</b></div><div><small>Pending payout</small><b>₹{store.pendingAmount.toLocaleString("en-IN")}</b></div><div><small>Paid</small><b>₹{store.paidAmount.toLocaleString("en-IN")}</b></div><button disabled={settling === store.storeId || store.pendingAmount <= 0} onClick={() => void paySettlement(store)}>{settling === store.storeId ? "Processing..." : "Mark Paid"}</button></article>)}</div></section>}
+
+        {tab === "stores" && "Stores"}
               {tab === "add" && "Add Product"}
               {tab === "products" && "Products"}
               {tab === "orders" && "Orders"}
               {tab === "delivery" && "Delivery Boys"}
+              {tab === "settlements" && "Store Settlements"}
             </h1>
             <p>Live MegaMarto admin control center</p>
           </div>
@@ -259,15 +287,7 @@ export default function AdminDashboard() {
             <section className="za-dashboard-grid">
               <div className="za-card">
                 <div className="za-card-head"><h2>Marketplace Overview</h2><span>Live</span></div>
-                <div className="za-chart">
-                  <div style={{ height: "45%" }} />
-                  <div style={{ height: "70%" }} />
-                  <div style={{ height: "40%" }} />
-                  <div style={{ height: "85%" }} />
-                  <div style={{ height: "60%" }} />
-                  <div style={{ height: "95%" }} />
-                  <div style={{ height: "75%" }} />
-                </div>
+                <div className="za-summary"><p>Platform commission <b>₹{(stats.adminCommission || 0).toLocaleString("en-IN")}</b></p><p>Pending store payouts <b>₹{(stats.pendingSettlement || 0).toLocaleString("en-IN")}</b></p><p>Store partners <b>{stats.stores || 0}</b></p></div>
               </div>
 
               <div className="za-card">
@@ -292,8 +312,10 @@ export default function AdminDashboard() {
 
             <input placeholder="Product Name" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} />
             <input placeholder="Price" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} />
+            <input placeholder="MRP" type="number" min="1" value={productForm.mrp} onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })} />
+            <input placeholder="Unit (e.g. 1 kg, 500 g)" value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })} />
             <input placeholder="Image URL" value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
-            <input placeholder="Stock" value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} />
+            <input placeholder="Stock" type="number" min="0" step="1" value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} />
 
             <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>
               <option>Fruits</option>

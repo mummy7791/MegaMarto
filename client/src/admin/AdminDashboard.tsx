@@ -146,7 +146,8 @@ export default function AdminDashboard() {
       headers: authHeaders,
       body: JSON.stringify({
         ...productForm,
-        price: Number(productForm.price),\n        mrp: Number(productForm.mrp || productForm.price),
+        price: Number(productForm.price),
+        mrp: Number(productForm.mrp || productForm.price),
         stock: Number(productForm.stock),
         isAvailable: true,
       }),
@@ -165,6 +166,8 @@ export default function AdminDashboard() {
       name: "",
       price: "",
       image: "",
+      mrp: "",
+      unit: "1 pack",
       category: "Grocery",
       stock: "10",
       description: "",
@@ -307,7 +310,9 @@ export default function AdminDashboard() {
 
             <input placeholder="Product Name" value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} />
             <input placeholder="Price" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} />
-            <input placeholder="MRP" type="number" min="1" value={productForm.mrp} onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })} />\n            <input placeholder="Unit (e.g. 1 kg, 500 g)" value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })} />\n            <input placeholder="Image URL" value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
+            <input placeholder="MRP" type="number" min="1" value={productForm.mrp} onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })} />
+            <input placeholder="Unit (e.g. 1 kg, 500 g)" value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })} />
+            <input placeholder="Image URL" value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
             <input placeholder="Stock" type="number" min="0" step="1" value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} />
 
             <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>

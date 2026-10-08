@@ -34,11 +34,11 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
     const deliveryBoys = await DeliveryBoy.find();
 
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const adminCommission = orders.reduce(
+    const adminCommission = eligibleOrders.reduce(
       (sum, o) => sum + (o.adminCommission || 0),
       0
     );
-    const storeAmount = orders.reduce((sum, o) => sum + (o.storeAmount || 0), 0);
+    const storeAmount = eligibleOrders.reduce((sum, o) => sum + (o.storeAmount || 0), 0);
     const pendingSettlement = orders
       .filter((o) => o.settlementStatus === "PENDING")
       .reduce((sum, o) => sum + (o.storeAmount || 0), 0);
@@ -161,7 +161,10 @@ router.get("/stores/:id/products", auth, adminOnly, async (req, res) => {
 ======================================================= */
 router.put("/products/:id", auth, adminOnly, async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    const allowed = ["name","price","mrp","unit","image","category","stock","description","isAvailable","featured","tags"];
+    const changes = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
+    if (changes.stock !== undefined && (!Number.isInteger(Number(changes.stock)) || Number(changes.stock) < 0)) return res.status(400).json({ message: "Stock must be a non-negative integer" });
+    const product = await Product.findByIdAndUpdate(req.params.id, changes, {
       new: true,
     });
 
@@ -330,16 +333,14 @@ router.put("/assign-order/:orderId", auth, adminOnly, async (req, res) => {
       return res.status(400).json({ message: "Select an active delivery partner" });
     }
 
-    order.deliveryBoy = deliveryBoyId;
-    order.status = "ASSIGNED";
-
-    await order.save();
+    const assigned = await Order.findOneAndUpdate({ _id: order._id, status: "STORE_ACCEPTED", deliveryBoy: null }, { $set: { deliveryBoy: deliveryBoyId, status: "ASSIGNED" } }, { new: true });
+    if (!assigned) return res.status(409).json({ message: "Order already assigned or status changed" });
 
     if (global.io) {
-      global.io.emit("orderAssigned", order);
+      global.io.emit("orderAssigned", assigned);
     }
 
-    res.json({ message: "Order assigned successfully", order });
+    res.json({ message: "Order assigned successfully", order: assigned });
   } catch (err) {
     console.log("ASSIGN ORDER ERROR:", err);
     res.status(500).json({ message: "Server error" });
@@ -380,16 +381,17 @@ router.get("/settlements", auth, adminOnly, async (req, res) => {
       stores.map(async (store) => {
         const orders = await Order.find({ storeId: store._id });
 
-        const totalSales = orders.reduce((s, o) => s + (o.total || 0), 0);
+        const eligibleOrders = orders.filter((o) => o.status === "DELIVERED" && o.paymentStatus === "PAID");
+        const totalSales = eligibleOrders.reduce((s, o) => s + o.items.reduce((a, item) => a + item.price * item.qty, 0), 0);
         const adminCommission = orders.reduce(
           (s, o) => s + (o.adminCommission || 0),
           0
         );
         const storeAmount = orders.reduce((s, o) => s + (o.storeAmount || 0), 0);
-        const pendingAmount = orders
+        const pendingAmount = eligibleOrders
           .filter((o) => o.settlementStatus === "PENDING")
           .reduce((s, o) => s + (o.storeAmount || 0), 0);
-        const paidAmount = orders
+        const paidAmount = eligibleOrders
           .filter((o) => o.settlementStatus === "PAID")
           .reduce((s, o) => s + (o.storeAmount || 0), 0);
 
@@ -426,6 +428,8 @@ router.put("/settlements/:storeId/pay", auth, adminOnly, async (req, res) => {
       {
         storeId,
         settlementStatus: "PENDING",
+        status: "DELIVERED",
+        paymentStatus: "PAID",
       },
       {
         $set: {

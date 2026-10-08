@@ -392,11 +392,12 @@ router.get("/settlements", auth, adminOnly, async (req, res) => {
 
         const eligibleOrders = orders.filter((o) => o.status === "DELIVERED" && o.paymentStatus === "PAID");
         const totalSales = eligibleOrders.reduce((s, o) => s + o.items.reduce((a, item) => a + item.price * item.qty, 0), 0);
-        const adminCommission = orders.reduce(
-          (s, o) => s + (o.adminCommission || 0),
-          0
+        const adminCommission = eligibleOrders.reduce(
+          (sum, order) => sum + (order.adminCommission || 0), 0
         );
-        const storeAmount = orders.reduce((s, o) => s + (o.storeAmount || 0), 0);
+        const storeAmount = eligibleOrders.reduce(
+          (sum, order) => sum + (order.storeAmount || 0), 0
+        );
         const pendingAmount = eligibleOrders
           .filter((o) => o.settlementStatus === "PENDING")
           .reduce((s, o) => s + (o.storeAmount || 0), 0);

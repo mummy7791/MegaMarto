@@ -142,7 +142,9 @@ app.post("/payment/verify", (req, res) => {
       .update(body)
       .digest("hex");
 
-    if (expectedSignature === razorpay_signature) {
+    const actual = Buffer.from(String(razorpay_signature), "hex");
+    const expected = Buffer.from(expectedSignature, "hex");
+    if (actual.length === expected.length && crypto.timingSafeEqual(actual, expected)) {
       return res.json({
         success: true,
         message: "Payment verified successfully",

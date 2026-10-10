@@ -259,27 +259,11 @@ export default function DeliveryDashboard() {
   const openStoreMap = (order: Order) => {
     const lat = order.storeId?.location?.lat;
     const lng = order.storeId?.location?.lng;
-
-    if (lat && lng) {
-      window.open(
-        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
-        "_blank"
-      );
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+      alert("Exact shop pickup GPS has not been saved. Ask admin to update this store location.");
       return;
     }
-
-    const address =
-      order.storeId?.address ||
-      order.storeName ||
-      order.storeId?.storeName ||
-      "store";
-
-    window.open(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        address
-      )}`,
-      "_blank"
-    );
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, "_blank", "noopener,noreferrer");
   };
 
   const activeOrders = myOrders.filter((o) => o.status !== "DELIVERED");
@@ -413,11 +397,11 @@ export default function DeliveryDashboard() {
                 Store Address:{" "}
                 {order.storeId?.address || "Address not added"}
               </p>
-              <p>Store Phone: {order.storeId?.phone || "N/A"}</p>
+              <p>Store Phone: {order.storeId?.phone ? <a href={`tel:${order.storeId.phone}`}>📞 {order.storeId.phone}</a> : "N/A"}</p>
 
               <div className="delivery-route"><span>2</span><div><small>DELIVER TO</small><h3>Customer Details</h3></div></div>
               <p>Customer: {order.address?.name || "Customer"}</p>
-              <p>Phone: {order.address?.phone || "N/A"}</p>
+              <p>Phone: {order.address?.phone ? <a href={`tel:${order.address.phone}`}>📞 {order.address.phone}</a> : "N/A"}</p>
               <p>
                 Address: {order.address?.street || "N/A"},{" "}
                 {order.address?.city || "N/A"} -{" "}

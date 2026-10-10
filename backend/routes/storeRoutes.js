@@ -272,8 +272,8 @@ router.put("/orders/:id/status", auth, async (req, res) => {
         .populate("deliveryBoy", "name phone bikeNumber");
 
       if (global.io) {
-        global.io.emit("orderUpdated", cancelledOrder);
-        global.io.emit("storeCancelledOrder", cancelledOrder);
+        global.io.emit("orderUpdated", { _id: cancelledOrder._id });
+        global.io.emit("storeCancelledOrder", { _id: cancelledOrder._id });
       }
 
       return res.json({
@@ -293,9 +293,9 @@ router.put("/orders/:id/status", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber");
 
     if (global.io) {
-      global.io.emit("orderUpdated", acceptedOrder);
-      global.io.emit("storeAcceptedOrder", acceptedOrder);
-      global.io.emit("newDeliveryOrder", acceptedOrder);
+      global.io.emit("orderUpdated", { _id: acceptedOrder._id });
+      global.io.emit("storeAcceptedOrder", { _id: acceptedOrder._id });
+      global.io.emit("newDeliveryOrder", { _id: acceptedOrder._id });
     }
 
     res.json({

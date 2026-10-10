@@ -7,6 +7,7 @@ type Store = {
   email: string;
   phone: string;
   address: string;
+  location?: { lat: number; lng: number };
 };
 
 type StoreForm = {
@@ -16,6 +17,7 @@ type StoreForm = {
   password: string;
   phone: string;
   address: string;
+  location: { lat: number; lng: number } | null;
 };
 
 const API = "https://megamarto-backend.onrender.com";
@@ -23,6 +25,7 @@ const API = "https://megamarto-backend.onrender.com";
 export default function Stores() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   const [form, setForm] = useState<StoreForm>({
     storeName: "",
@@ -31,6 +34,7 @@ export default function Stores() {
     password: "",
     phone: "",
     address: "",
+    location: null,
   });
 
   const token = localStorage.getItem("adminToken") || "";
@@ -61,6 +65,19 @@ export default function Stores() {
     }
   };
 
+  const captureStoreLocation = () => {
+    if (!navigator.geolocation) { alert("GPS is not supported on this device"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm(prev => ({ ...prev, location: { lat: pos.coords.latitude, lng: pos.coords.longitude } }));
+        setLocating(false);
+      },
+      (error) => { alert("Location not saved: " + error.message + ". Allow location access at the shop and retry."); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    );
+  };
+
   const createStore = async () => {
     if (
       !form.storeName ||
@@ -68,7 +85,7 @@ export default function Stores() {
       !form.email ||
       !form.password ||
       !form.phone ||
-      !form.address
+      !form.address || !form.location
     ) {
       alert("Please fill all store details");
       return;
@@ -102,6 +119,7 @@ export default function Stores() {
         password: "",
         phone: "",
         address: "",
+        location: null,
       });
 
       await loadStores();
@@ -212,6 +230,10 @@ export default function Stores() {
           }
         />
 
+        <div style={{ margin: "12px 0", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button type="button" disabled={locating} onClick={captureStoreLocation}>{locating ? "Getting shop GPS..." : "📍 Use Current Shop Location"}</button>
+          {form.location ? <span>Pickup GPS saved: {form.location.lat.toFixed(5)}, {form.location.lng.toFixed(5)}</span> : <span>Stand at the shop and allow location permission to save pickup point.</span>}
+        </div>
         <button onClick={createStore} disabled={loading}>
           {loading ? "Please wait..." : "Create Store"}
         </button>
@@ -238,6 +260,7 @@ export default function Stores() {
             <p>Email: {store.email}</p>
             <p>Phone: {store.phone}</p>
             <p>Address: {store.address}</p>
+            <p>Pickup GPS: {store.location?.lat != null && store.location?.lng != null ? `${store.location.lat.toFixed(5)}, ${store.location.lng.toFixed(5)}` : "Not set (older store)"}</p>
 
             <button onClick={() => deleteStore(store._id)} disabled={loading}>
               Delete

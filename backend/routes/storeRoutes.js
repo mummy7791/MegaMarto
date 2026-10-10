@@ -18,6 +18,25 @@ function storeOrderView(order) {
 }
 
 
+
+router.get("/nearby", async (req,res) => {
+ try {
+  const lat=Number(req.query.lat), lng=Number(req.query.lng);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return res.status(400).json({message:"Valid customer GPS required"});
+  const rad=Math.PI/180;
+  const shops=await Store.find({status:"active"}).select("storeName address location deliveryRadiusKm").lean();
+  const nearby=shops.flatMap(shop=>{
+   const point=shop.location;
+   if(!point||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)) return [];
+   const h=Math.sin((point.lat-lat)*rad/2)**2+Math.cos(lat*rad)*Math.cos(point.lat*rad)*Math.sin((point.lng-lng)*rad/2)**2;
+   const distanceKm=6371*2*Math.asin(Math.min(1,Math.sqrt(h)));
+   if(distanceKm>Math.min(30,shop.deliveryRadiusKm||30)) return [];
+   return [{_id:shop._id,storeName:shop.storeName,address:shop.address,distanceKm:Math.round(distanceKm*10)/10,etaMinutes:Math.ceil(15+distanceKm/18*60)}];
+  }).sort((a,b)=>a.distanceKm-b.distanceKm);
+  return res.json(nearby);
+ } catch(e) { return res.status(500).json({message:"Nearby stores unavailable"}); }
+});
+
 /* =======================================================
    🏪 STORE LOGIN
 ======================================================= */

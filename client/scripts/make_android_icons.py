@@ -26,4 +26,10 @@ for density, size in sizes.items():
     rounded = image.copy()
     rounded.putalpha(mask)
     rounded.save(directory / "ic_launcher_round.png", optimize=True)
+    # Android 8+ adaptive launcher foreground has a 108dp canvas; center artwork in safe zone.
+    fg_size = round(size * 108 / 48)
+    foreground = Image.new("RGBA", (fg_size, fg_size), (0, 0, 0, 0))
+    fg_art = ImageOps.contain(logo, (round(fg_size * .58), round(fg_size * .58)), Image.Resampling.LANCZOS)
+    foreground.alpha_composite(fg_art, ((fg_size - fg_art.width) // 2, (fg_size - fg_art.height) // 2))
+    foreground.save(directory / "ic_launcher_foreground.png", optimize=True)
 print("MegaMarto logo icons generated. Rebuild Android app in Android Studio.")

@@ -84,6 +84,16 @@ router.post("/stores", auth, adminOnly, async (req, res) => {
   }
 });
 
+router.patch("/stores/:id/delivery-radius", auth, adminOnly, async (req,res) => {
+ try {
+  const radius=Number(req.body.radiusKm);
+  if(!Number.isFinite(radius)||radius<1||radius>30) return res.status(400).json({message:"Radius must be between 1 and 30 km"});
+  const store=await Store.findByIdAndUpdate(req.params.id,{$set:{deliveryRadiusKm:radius}},{new:true,runValidators:true}).select("-password");
+  if(!store) return res.status(404).json({message:"Store not found"});
+  return res.json({message:"Delivery radius updated",store});
+ } catch(e) { return res.status(400).json({message:"Unable to update delivery radius"}); }
+});
+
 router.get("/stores", auth, adminOnly, async (req, res) => {
   try {
     const stores = await Store.find()

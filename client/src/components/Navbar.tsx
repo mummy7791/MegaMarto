@@ -144,11 +144,7 @@ function Navbar() {
 
       <div className="mm-navbar">
         <button className="mm-logo" onClick={() => goTo("/")} aria-label="MegaMarto home">
-          <img className="mm-logo-mark" src="/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png?v=20261010" alt="MegaMarto logo" style={{ objectFit: "contain", background: "white" }} />
-          <span className="mm-logo-copy">
-            <b>MegaMarto</b>
-            <small>Smart grocery shopping</small>
-          </span>
+          <img className="mm-logo-mark" src="/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png?v=20261010" alt="MegaMarto logo" style={{ width: "clamp(112px, 12vw, 170px)", height: "64px", maxWidth: "none", objectFit: "contain", background: "white", borderRadius: "12px" }} />
         </button>
 
         <button

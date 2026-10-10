@@ -86,9 +86,27 @@ function Home() {
   });
 
   useEffect(() => {
-    try { const gps=JSON.parse(localStorage.getItem("userLocation") || "null"); if(!gps || !Number.isFinite(Number(gps.lat)) || !Number.isFinite(Number(gps.lng))) return;
-      fetch(`${API_URL}/store/nearby?lat=${encodeURIComponent(gps.lat)}&lng=${encodeURIComponent(gps.lng)}`).then(res=>res.json()).then(data=>{ if(Array.isArray(data)) { setNearby(data); setNearbyMessage(data.length ? "" : "Delivery unavailable: no shop serves this GPS location."); } }).catch(()=>setNearbyMessage("Nearby stores could not load."));
-    } catch { /* location not available */ }
+    let active = true;
+    const loadNearby = () => {
+      try {
+        const gps = JSON.parse(localStorage.getItem("userLocation") || "null");
+        if (!gps || !Number.isFinite(Number(gps.lat)) || !Number.isFinite(Number(gps.lng))) return;
+        setNearbyMessage("Finding shops near your location...");
+        fetch(`${API_URL}/store/nearby?lat=${encodeURIComponent(gps.lat)}&lng=${encodeURIComponent(gps.lng)}`)
+          .then(res => { if (!res.ok) throw new Error("Nearby stores unavailable"); return res.json(); })
+          .then(data => {
+            if (!active) return;
+            if (Array.isArray(data)) {
+              setNearby(data);
+              setNearbyMessage(data.length ? "" : "No shops currently deliver to this location.");
+            }
+          })
+          .catch(() => { if (active) setNearbyMessage("Nearby stores could not load. Try again."); });
+      } catch { /* GPS is not yet available */ }
+    };
+    loadNearby();
+    window.addEventListener("locationUpdated", loadNearby);
+    return () => { active = false; window.removeEventListener("locationUpdated", loadNearby); };
   }, []);
 
   useEffect(() => {

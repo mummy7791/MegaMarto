@@ -72,7 +72,7 @@ router.post("/products", auth, async (req, res) => {
     }
 
     const product = await Product.create({
-      ...req.body,
+      ...Object.fromEntries(Object.entries(req.body).filter(([key]) => ["name","price","mrp","unit","image","category","stock","description","featured","tags"].includes(key))),
       storeId: store._id,
       storeName: store.storeName,
       isAvailable: true,
@@ -126,8 +126,8 @@ router.put("/products/:id", auth, async (req, res) => {
         _id: req.params.id,
         storeId: req.user.id,
       },
-      req.body,
-      { new: true }
+      { $set: Object.fromEntries(Object.entries(req.body).filter(([key]) => ["name","price","mrp","unit","image","category","stock","description","isAvailable","featured","tags"].includes(key))) },
+      { new: true, runValidators: true }
     );
 
     if (!product) {
@@ -235,6 +235,8 @@ router.put("/orders/:id/status", auth, async (req, res) => {
       order.storeStatus = "CANCELLED";
       order.deliveryBoy = null;
       await order.save();
+      for (const item of order.items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.qty } });
+      if (global.io) global.io.emit("inventoryUpdated", { productIds: order.items.map(item => item.productId) });
 
       const cancelledOrder = await Order.findById(order._id)
         .populate("storeId", "storeName address phone location")

@@ -16,7 +16,8 @@ module.exports = (req, res, next) => {
     }
 
     // 🔐 secret
-    const JWT_SECRET = process.env.JWT_SECRET || "SECRET_KEY";
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) return res.status(503).json({ message: "Authentication is not configured" });
 
     // verify
     const decoded = jwt.verify(token, JWT_SECRET);

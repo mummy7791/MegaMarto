@@ -24,7 +24,15 @@ router.post("/quote", auth, async (req, res) => {
       return res.status(400).json({ message: "Cart items required" });
     }
 
-    const ids = [...new Set(items.map((item) => String(item.productId || "")).filter(Boolean))];
+    const requested = new Map();
+    for (const item of items) {
+      const id = String(item.productId || "");
+      const qty = Number(item.qty);
+      if (!/^[a-f0-9]{24}$/i.test(id) || !Number.isSafeInteger(qty) || qty < 1 || qty > 100) return res.status(400).json({ message: "Invalid product or quantity" });
+      requested.set(id, (requested.get(id) || 0) + qty);
+      if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
+    }
+    const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
       .populate("storeId", "storeName");
 
@@ -35,9 +43,8 @@ router.post("/quote", auth, async (req, res) => {
     const productMap = new Map(products.map((p) => [String(p._id), p]));
     const groups = new Map();
 
-    for (const item of items) {
-      const product = productMap.get(String(item.productId));
-      const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+    for (const [id, qty] of requested) {
+      const product = productMap.get(id);
 
       if (!product || product.stock < qty) {
         return res.status(409).json({
@@ -100,19 +107,29 @@ router.post("/quote", auth, async (req, res) => {
 router.post("/", auth, async (req, res) => {
   try {
     const { items, address, location, paymentMethod, paymentStatus, paymentId } = req.body;
+    if (!["COD", "RAZORPAY"].includes(paymentMethod)) return res.status(400).json({ message: "Invalid payment method" });
+    if (paymentMethod === "COD" && (paymentStatus === "PAID" || paymentId)) return res.status(400).json({ message: "COD cannot be marked paid in checkout" });
+    
     if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ message: "Cart items required" });
     if (!address?.name || !address?.phone || !address?.street || !address?.city || !address?.pincode) return res.status(400).json({ message: "Complete delivery address required" });
 
-    const ids = [...new Set(items.map((item) => String(item.productId || "")).filter(Boolean))];
+    const requested = new Map();
+    for (const item of items) {
+      const id = String(item.productId || "");
+      const qty = Number(item.qty);
+      if (!/^[a-f0-9]{24}$/i.test(id) || !Number.isSafeInteger(qty) || qty < 1 || qty > 100) return res.status(400).json({ message: "Invalid product or quantity" });
+      requested.set(id, (requested.get(id) || 0) + qty);
+      if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
+    }
+    const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName");
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
     const groups = new Map();
 
-    for (const item of items) {
-      const product = productMap.get(String(item.productId));
-      const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+    for (const [id, qty] of requested) {
+      const product = productMap.get(id);
       if (!product || product.stock < qty) return res.status(409).json({ message: (product?.name || "Product") + " has only " + (product?.stock || 0) + " left" });
 
       const storeId = product.storeId?._id || product.storeId || null;
@@ -125,7 +142,19 @@ router.post("/", auth, async (req, res) => {
       group.itemTotal += product.price * qty;
     }
 
+    const reserved = [];
+    try {
+      for (const [id, qty] of requested) {
+        const updated = await Product.findOneAndUpdate({ _id: id, isAvailable: true, stock: { $gte: qty } }, { $inc: { stock: -qty } }, { new: true });
+        if (!updated) throw Object.assign(new Error("Product stock changed. Refresh cart and try again."), { status: 409 });
+        reserved.push({ id, qty });
+      }
+    } catch (error) {
+      for (const item of reserved) await Product.updateOne({ _id: item.id }, { $inc: { stock: item.qty } });
+      return res.status(error.status || 500).json({ message: error.message || "Stock reservation failed" });
+    }
     const createdOrders = [];
+    try {
     for (const group of groups.values()) {
       const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
       const handlingFee = 5;
@@ -138,13 +167,15 @@ router.post("/", auth, async (req, res) => {
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
         commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
-        paymentMethod: paymentMethod || "COD", paymentStatus: paymentStatus || "PENDING", paymentId: paymentId || "",
+        paymentMethod, paymentStatus: paymentMethod === "COD" ? "PENDING" : (paymentStatus || "PENDING"), paymentId: paymentMethod === "COD" ? "" : (paymentId || ""),
       });
       createdOrders.push(order);
     }
 
-    for (const group of groups.values()) {
-      for (const item of group.items) await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
+    } catch (error) {
+      await Order.deleteMany({ _id: { $in: createdOrders.map(order => order._id) } });
+      for (const item of reserved) await Product.updateOne({ _id: item.id }, { $inc: { stock: item.qty } });
+      throw error;
     }
 
     if (global.io) {
@@ -246,6 +277,10 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
     }
 
     await order.save();
+    if (status === "STORE_CANCELLED") {
+      for (const item of order.items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.qty } });
+      if (global.io) global.io.emit("inventoryUpdated", { productIds: order.items.map(item => item.productId) });
+    }
 
     if (global.io) {
       global.io.emit("orderUpdated", order);

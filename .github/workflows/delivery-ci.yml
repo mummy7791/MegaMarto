@@ -29,3 +29,29 @@ jobs:
       - name: Verify backend JavaScript syntax
         run: |
           find backend -type f -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check
+  backend-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install backend dependencies
+        run: npm install --no-fund
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+  payment-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/payment-security.test.js

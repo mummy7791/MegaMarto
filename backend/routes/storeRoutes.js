@@ -8,6 +8,16 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const auth = require("../middleware/auth");
 
+function storeOrderView(order) {
+ const o=order.toObject ? order.toObject() : {...order};
+ const itemTotal=(o.items||[]).reduce((sum,item)=>sum+Number(item.price||0)*Number(item.qty||0),0);
+ // Store sees merchandise value only, not customer delivery fees or platform charges.
+ delete o.total; delete o.deliveryFee; delete o.handlingFee; delete o.adminCommission;
+ delete o.commissionPercent; delete o.storeAmount; delete o.settlementStatus; delete o.settledAt;
+ return {...o, merchandiseTotal:itemTotal};
+}
+
+
 /* =======================================================
    🏪 STORE LOGIN
 ======================================================= */
@@ -191,7 +201,7 @@ router.get("/orders", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber")
       .sort({ createdAt: -1 });
 
-    res.json(orders);
+    res.json(orders.map(storeOrderView));
   } catch (err) {
     console.log("STORE ORDERS ERROR:", err);
     res.status(500).json({ message: "Orders fetch failed" });
@@ -249,7 +259,7 @@ router.put("/orders/:id/status", auth, async (req, res) => {
 
       return res.json({
         message: "Order cancelled successfully",
-        order: cancelledOrder,
+        order: storeOrderView(cancelledOrder),
       });
     }
 
@@ -271,7 +281,7 @@ router.put("/orders/:id/status", auth, async (req, res) => {
 
     res.json({
       message: "Order accepted. Waiting for delivery boy",
-      order: acceptedOrder,
+      order: storeOrderView(acceptedOrder),
     });
   } catch (err) {
     console.log("STORE ORDER STATUS ERROR:", err);

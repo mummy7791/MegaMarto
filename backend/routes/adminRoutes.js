@@ -171,8 +171,9 @@ router.put("/products/:id", auth, adminOnly, async (req, res) => {
     const allowed = ["name","price","mrp","unit","image","category","stock","description","isAvailable","featured","tags"];
     const changes = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
     if (changes.stock !== undefined && (!Number.isInteger(Number(changes.stock)) || Number(changes.stock) < 0)) return res.status(400).json({ message: "Stock must be a non-negative integer" });
-    const product = await Product.findByIdAndUpdate(req.params.id, changes, {
+    const product = await Product.findByIdAndUpdate(req.params.id, { $set: changes }, {
       new: true,
+      runValidators: true,
     });
 
     if (!product) {

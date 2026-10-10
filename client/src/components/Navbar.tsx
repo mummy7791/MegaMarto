@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, Menu, Search, ShoppingCart, UserRound, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import "./Navbar.css";
 
 type Product = {
@@ -89,6 +90,7 @@ function Navbar() {
         };
 
         try {
+          if (Capacitor.isNativePlatform()) throw new Error("Use GPS coordinates without slow reverse lookup");
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${data.lat}&lon=${data.lng}`
           );
@@ -118,6 +120,13 @@ function Navbar() {
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   };
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || !navigator.permissions?.query) return;
+    navigator.permissions.query({ name: "geolocation" }).then((status) => {
+      if (status.state === "granted" && !localStorage.getItem("userLocation")) requestLocation();
+    }).catch(() => {});
+  }, []);
 
   const goTo = (path: string) => {
     setProfileOpen(false);

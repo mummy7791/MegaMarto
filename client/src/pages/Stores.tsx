@@ -8,6 +8,7 @@ type Store = {
   phone: string;
   address: string;
   location?: { lat: number; lng: number };
+  deliveryRadiusKm?: number;
 };
 
 type StoreForm = {
@@ -21,9 +22,10 @@ type StoreForm = {
 };
 
 type GPS = { lat: number; lng: number };
+type LeafletCircle = { setLatLng: (point: [number,number]) => void; setRadius: (meters: number) => void; addTo: (map: LeafletMap) => LeafletCircle };
 type LeafletMap = { setView: (coords: [number, number], zoom: number) => LeafletMap; on: (event: string, cb: (event: { latlng: GPS }) => void) => void; remove: () => void; invalidateSize: () => void };
 type LeafletMarker = { setLatLng: (coords: [number, number]) => void; on: (event: string, cb: (event: { target: { getLatLng: () => GPS } }) => void) => void; addTo: (map: LeafletMap) => LeafletMarker };
-type LeafletAPI = { map: (el: HTMLElement) => LeafletMap; tileLayer: (url: string, opts: { attribution: string; maxZoom: number }) => { addTo: (map: LeafletMap) => void }; marker: (coords: [number, number], opts: { draggable: boolean }) => LeafletMarker };
+type LeafletAPI = { map: (el: HTMLElement) => LeafletMap; tileLayer: (url: string, opts: { attribution: string; maxZoom: number }) => { addTo: (map: LeafletMap) => void }; circle: (coords: [number,number], opts: { radius: number; color: string; fillOpacity: number }) => LeafletCircle; marker: (coords: [number, number], opts: { draggable: boolean }) => LeafletMarker };
 declare global { interface Window { L?: LeafletAPI } }
 let leafletPromise: Promise<void> | undefined;
 function loadLeaflet(): Promise<void> {
@@ -38,10 +40,11 @@ function loadLeaflet(): Promise<void> {
   }
   return leafletPromise;
 }
-function StoreLocationMap({ value, onChange }: { value: GPS | null; onChange: (point: GPS) => void }) {
+function StoreLocationMap({ value, onChange, radiusKm }: { value: GPS | null; onChange: (point: GPS) => void; radiusKm?: number }) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<LeafletMap | null>(null);
   const pin = useRef<LeafletMarker | null>(null);
+  const circle = useRef<LeafletCircle | null>(null);
   const callback = useRef(onChange);
   callback.current = onChange;
   const [mapError, setMapError] = useState("");
@@ -56,15 +59,17 @@ function StoreLocationMap({ value, onChange }: { value: GPS | null; onChange: (p
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(instance);
       const marker = L.marker(start, { draggable: true }).addTo(instance);
       pin.current = marker;
+      if (radiusKm) circle.current = L.circle(start, { radius: radiusKm * 1000, color: "#16a34a", fillOpacity: 0.08 }).addTo(instance);
       instance.on("click", event => callback.current({ lat: event.latlng.lat, lng: event.latlng.lng }));
       marker.on("dragend", event => { const p = event.target.getLatLng(); callback.current({ lat: p.lat, lng: p.lng }); });
       setTimeout(() => { if (active) instance.invalidateSize(); }, 100);
     }).catch(err => { if (active) setMapError(String(err)); });
-    return () => { active = false; map.current?.remove(); map.current = null; pin.current = null; };
+    return () => { active = false; map.current?.remove(); map.current = null; pin.current = null; circle.current = null; };
   }, []);
   useEffect(() => {
-    if (value && map.current && pin.current) { pin.current.setLatLng([value.lat, value.lng]); map.current.setView([value.lat, value.lng], 17); }
+    if (value && map.current && pin.current) { pin.current.setLatLng([value.lat, value.lng]); map.current.setView([value.lat, value.lng], radiusKm ? 10 : 17); circle.current?.setLatLng([value.lat, value.lng]); }
   }, [value?.lat, value?.lng]);
+  useEffect(() => { if (radiusKm && circle.current) circle.current.setRadius(radiusKm * 1000); }, [radiusKm]);
   return <div style={{ marginTop: 14, width: "100%", minWidth: 0 }}>
     <strong>📍 Select exact store pickup location</strong>
     <p style={{ margin: "5px 0 10px", fontSize: 13 }}>Tap anywhere on the map or drag the green pin to the shop entrance. Zoom in for accuracy.</p>
@@ -84,6 +89,7 @@ export default function Stores() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [radiusDraft, setRadiusDraft] = useState<Record<string,number>>({});
   const [editingGPS, setEditingGPS] = useState<{ id: string; location: GPS | null } | null>(null);
 
   const [form, setForm] = useState<StoreForm>({
@@ -320,10 +326,18 @@ export default function Stores() {
             <p>Email: {store.email}</p>
             <p>Phone: {store.phone}</p>
             <p>Address: {store.address}</p>
+            <p>Delivery radius: {store.deliveryRadiusKm ?? 30} km</p>
+            <label style={{ display: "block", margin: "8px 0" }}>Service radius (1–30 km)
+              <input type="range" min={1} max={30} value={radiusDraft[store._id] ?? store.deliveryRadiusKm ?? 30} onChange={e => setRadiusDraft(prev => ({ ...prev, [store._id]: Number(e.target.value) }))} />
+              <strong>{radiusDraft[store._id] ?? store.deliveryRadiusKm ?? 30} km</strong>
+            </label>
+            <button type="button" disabled={loading} onClick={async () => {
+              try { setLoading(true); const response = await fetch(`${API}/admin/stores/${store._id}/delivery-radius`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ radiusKm: radiusDraft[store._id] ?? store.deliveryRadiusKm ?? 30 }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || "Unable to save radius"); await loadStores(); alert("Delivery radius saved"); } catch (err) { alert(err instanceof Error ? err.message : "Save failed"); } finally { setLoading(false); }
+            }}>Save delivery radius</button>
             <p>Pickup GPS: {store.location?.lat != null && store.location?.lng != null ? `${store.location.lat.toFixed(5)}, ${store.location.lng.toFixed(5)}` : "Not set (older store)"}</p>
             <button type="button" onClick={() => setEditingGPS({ id: store._id, location: store.location ?? null })}>🗺 Change Location on Map</button>
             {editingGPS?.id === store._id && <div style={{ marginTop: 14, padding: 12, background: "#f6faf7", borderRadius: 12 }}>
-              <StoreLocationMap value={editingGPS.location} onChange={location => setEditingGPS({ id: store._id, location })} />
+              <StoreLocationMap value={editingGPS.location} radiusKm={radiusDraft[store._id] ?? store.deliveryRadiusKm ?? 30} onChange={location => setEditingGPS({ id: store._id, location })} />
               <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
                 <button type="button" disabled={locating} onClick={() => {
                   if (!navigator.geolocation) { alert("GPS not supported"); return; }

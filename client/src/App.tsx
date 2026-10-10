@@ -33,6 +33,8 @@ import StoreDashboard from "./store/StoreDashboard";
 
 /* COMPONENTS */
 import Navbar from "./components/Navbar";
+import ConnectionStatus from "./components/ConnectionStatus";
+import MobileLoadingScreen from "./components/MobileLoadingScreen";
 
 const validToken = (token: string | null) =>
   !!token && token !== "undefined" && token !== "null" && token.trim() !== "";
@@ -54,6 +56,8 @@ function AppContent() {
 
   return (
     <>
+      <ConnectionStatus />
+      <MobileLoadingScreen />
       {!hideNavbar && <Navbar />}
 
       <main style={{ paddingTop: hideNavbar ? 0 : 70 }}>

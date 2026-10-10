@@ -8,6 +8,35 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const auth = require("../middleware/auth");
 
+function storeOrderView(order) {
+ const o=order.toObject ? order.toObject() : {...order};
+ const itemTotal=(o.items||[]).reduce((sum,item)=>sum+Number(item.price||0)*Number(item.qty||0),0);
+ // Store sees merchandise value only, not customer delivery fees or platform charges.
+ delete o.total; delete o.deliveryFee; delete o.handlingFee; delete o.adminCommission;
+ delete o.commissionPercent; delete o.storeAmount; delete o.settlementStatus; delete o.settledAt;
+ return {...o, merchandiseTotal:itemTotal};
+}
+
+
+
+router.get("/nearby", async (req,res) => {
+ try {
+  const lat=Number(req.query.lat), lng=Number(req.query.lng);
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return res.status(400).json({message:"Valid customer GPS required"});
+  const rad=Math.PI/180;
+  const shops=await Store.find({status:"active"}).select("storeName address location deliveryRadiusKm").lean();
+  const nearby=shops.flatMap(shop=>{
+   const point=shop.location;
+   if(!point||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)) return [];
+   const h=Math.sin((point.lat-lat)*rad/2)**2+Math.cos(lat*rad)*Math.cos(point.lat*rad)*Math.sin((point.lng-lng)*rad/2)**2;
+   const distanceKm=6371*2*Math.asin(Math.min(1,Math.sqrt(h)));
+   if(distanceKm>Math.min(30,shop.deliveryRadiusKm||30)) return [];
+   return [{_id:shop._id,storeName:shop.storeName,address:shop.address,distanceKm:Math.round(distanceKm*10)/10,etaMinutes:Math.ceil(15+distanceKm/18*60)}];
+  }).sort((a,b)=>a.distanceKm-b.distanceKm);
+  return res.json(nearby);
+ } catch(e) { return res.status(500).json({message:"Nearby stores unavailable"}); }
+});
+
 /* =======================================================
    🏪 STORE LOGIN
 ======================================================= */
@@ -191,7 +220,7 @@ router.get("/orders", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber")
       .sort({ createdAt: -1 });
 
-    res.json(orders);
+    res.json(orders.map(storeOrderView));
   } catch (err) {
     console.log("STORE ORDERS ERROR:", err);
     res.status(500).json({ message: "Orders fetch failed" });
@@ -243,13 +272,13 @@ router.put("/orders/:id/status", auth, async (req, res) => {
         .populate("deliveryBoy", "name phone bikeNumber");
 
       if (global.io) {
-        global.io.emit("orderUpdated", cancelledOrder);
-        global.io.emit("storeCancelledOrder", cancelledOrder);
+        global.io.emit("orderUpdated", { _id: cancelledOrder._id });
+        global.io.emit("storeCancelledOrder", { _id: cancelledOrder._id });
       }
 
       return res.json({
         message: "Order cancelled successfully",
-        order: cancelledOrder,
+        order: storeOrderView(cancelledOrder),
       });
     }
 
@@ -264,14 +293,14 @@ router.put("/orders/:id/status", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber");
 
     if (global.io) {
-      global.io.emit("orderUpdated", acceptedOrder);
-      global.io.emit("storeAcceptedOrder", acceptedOrder);
-      global.io.emit("newDeliveryOrder", acceptedOrder);
+      global.io.emit("orderUpdated", { _id: acceptedOrder._id });
+      global.io.emit("storeAcceptedOrder", { _id: acceptedOrder._id });
+      global.io.emit("newDeliveryOrder", { _id: acceptedOrder._id });
     }
 
     res.json({
       message: "Order accepted. Waiting for delivery boy",
-      order: acceptedOrder,
+      order: storeOrderView(acceptedOrder),
     });
   } catch (err) {
     console.log("STORE ORDER STATUS ERROR:", err);

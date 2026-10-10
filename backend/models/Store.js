@@ -50,6 +50,7 @@ const storeSchema = new mongoose.Schema(
       },
     },
 
+    deliveryRadiusKm: { type: Number, min: 1, max: 30, default: 30 },
     status: {
       type: String,
       enum: ["active", "blocked"],

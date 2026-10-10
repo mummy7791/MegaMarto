@@ -7,6 +7,42 @@ const adminOnly = require("../middleware/admin");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 
+const Store = require("../models/Store");
+const MAX_KM = 30;
+const validGPS = p => p && p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
+function kilometers(a,b) {
+ const rad = Math.PI/180, dLat = (b.lat-a.lat)*rad, dLng = (b.lng-a.lng)*rad;
+ const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+ return 6371*2*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+function calculateDelivery(store,location,amount) {
+ if(!validGPS(location)) throw Object.assign(new Error("Allow accurate customer GPS before ordering"),{status:400});
+ if(!validGPS(store?.location)) throw Object.assign(new Error("Store pickup GPS not configured"),{status:409});
+ const km=kilometers(store.location,location);
+ if(km>Math.min(MAX_KM,Number(store.deliveryRadiusKm)||MAX_KM)) throw Object.assign(new Error("Delivery unavailable beyond 30 km. Shop distance: "+km.toFixed(1)+" km"),{status:422});
+ return {distanceKm:Math.round(km*10)/10,etaMinutes:Math.ceil(15+km/18*60),deliveryFee:amount>=499?0:25+5*Math.ceil(km/2)};
+}
+
+
+async function roadDelivery(store,location,amount) {
+ const base=calculateDelivery(store,location,amount); // strict geofence, never relaxed by routing
+ if(typeof fetch!=="function") return {...base,etaSource:"estimate"};
+ const a=store.location,b=location;
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),2500);
+ try {
+  const url=`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+  const response=await fetch(url,{signal:controller.signal});
+  if(!response.ok) throw new Error("Routing unavailable");
+  const route=(await response.json()).routes?.[0];
+  if(!route || !Number.isFinite(route.distance)||!Number.isFinite(route.duration)) throw new Error("No road route");
+  const distanceKm=Math.round(route.distance/100)/10;
+  const etaMinutes=Math.ceil(15+route.duration/60);
+  return {...base,distanceKm,etaMinutes,etaSource:"road",deliveryFee:amount>=499?0:25+5*Math.ceil(distanceKm/2)};
+ } catch {return {...base,etaSource:"estimate"};}
+ finally {clearTimeout(timeout);}
+}
+
 /* ================= CONTROLLERS ================= */
 const orderController = require("../controllers/orderController");
 
@@ -19,7 +55,7 @@ const getOrderById = orderController.getOrderById;
 ===================================================== */
 router.post("/quote", auth, async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items, location } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Cart items required" });
     }
@@ -34,7 +70,7 @@ router.post("/quote", auth, async (req, res) => {
     }
     const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
-      .populate("storeId", "storeName");
+      .populate("storeId", "storeName location deliveryRadiusKm");
 
     if (products.length !== ids.length) {
       return res.status(400).json({ message: "One or more products are unavailable" });
@@ -64,8 +100,9 @@ router.post("/quote", auth, async (req, res) => {
       groups.get(key).itemTotal += Number(product.price) * qty;
     }
 
-    const shops = [...groups.values()].map((group) => {
-      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+    const shops = await Promise.all([...groups.values()].map(async (group) => {
+      const store = group.storeId ? products.find(p=>String(p.storeId?._id || p.storeId)===String(group.storeId))?.storeId : null;
+      const {deliveryFee,distanceKm,etaMinutes,etaSource}=await roadDelivery(store,location,group.itemTotal);
       const handlingFee = 5;
       const commissionPercent = group.storeId ? 10 : 0;
       const adminCommission = Math.round((group.itemTotal * commissionPercent) / 100);
@@ -75,13 +112,16 @@ router.post("/quote", auth, async (req, res) => {
         storeName: group.storeName,
         itemTotal: group.itemTotal,
         deliveryFee,
+        distanceKm,
+        etaMinutes,
+        etaSource,
         handlingFee,
         commissionPercent,
         adminCommission,
         storeAmount,
         total: group.itemTotal + deliveryFee + handlingFee,
       };
-    });
+    }));
 
     const pricing = shops.reduce(
       (acc, shop) => ({
@@ -96,7 +136,7 @@ router.post("/quote", auth, async (req, res) => {
     res.json({ shopCount: shops.length, shops, pricing });
   } catch (err) {
     console.log("ORDER QUOTE ERROR:", err);
-    res.status(500).json({ message: "Unable to calculate checkout total" });
+    res.status(err.status || 500).json({ message: err.status ? err.message : "Unable to calculate checkout total" });
   }
 });
 
@@ -122,7 +162,7 @@ router.post("/", auth, async (req, res) => {
       if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
     }
     const ids = [...requested.keys()];
-    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName");
+    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName location deliveryRadiusKm");
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
@@ -142,6 +182,27 @@ router.post("/", auth, async (req, res) => {
       group.itemTotal += product.price * qty;
     }
 
+    for(const group of groups.values()) {
+      const store = group.storeId ? await Store.findById(group.storeId).select("location deliveryRadiusKm") : null;
+      group.delivery = await roadDelivery(store,location,group.itemTotal);
+    }
+    // Never trust client-supplied PAID status. Verify against Razorpay before reserving stock.
+    if (paymentMethod === "RAZORPAY") {
+      if (!paymentId || typeof paymentId !== "string") return res.status(400).json({message:"Verified Razorpay payment required"});
+      try {
+        const Razorpay = require("razorpay");
+        const gateway = new Razorpay({key_id:process.env.RAZORPAY_KEY_ID,key_secret:process.env.RAZORPAY_KEY_SECRET});
+        const payment = await gateway.payments.fetch(paymentId);
+        const expectedPaise = [...groups.values()].reduce((sum,g)=>sum+Math.round((g.itemTotal+g.delivery.deliveryFee+5)*100),0);
+        if (payment.status !== "captured" || payment.currency !== "INR" || Number(payment.amount) !== expectedPaise)
+          return res.status(400).json({message:"Payment not captured or checkout amount mismatch"});
+        const usedPayment = await Order.exists({paymentId});
+        if (usedPayment) return res.status(409).json({message:"Payment already used for an order"});
+      } catch (err) {
+        console.error("RAZORPAY PAYMENT VALIDATION ERROR",err);
+        return res.status(400).json({message:"Unable to validate payment with gateway"});
+      }
+    }
     const reserved = [];
     try {
       for (const [id, qty] of requested) {
@@ -156,7 +217,7 @@ router.post("/", auth, async (req, res) => {
     const createdOrders = [];
     try {
     for (const group of groups.values()) {
-      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+      const {deliveryFee,distanceKm,etaMinutes}=group.delivery;
       const handlingFee = 5;
       const calculatedTotal = group.itemTotal + deliveryFee + handlingFee;
       const commissionPercent = group.storeId ? 10 : 0;
@@ -164,10 +225,11 @@ router.post("/", auth, async (req, res) => {
       const storeAmount = group.itemTotal - adminCommission;
       const order = await Order.create({
         items: group.items, total: calculatedTotal, address, location, userId: req.user.id,
+        distanceKm, etaMinutes, deliveryFee, handlingFee,
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
         commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
-        paymentMethod, paymentStatus: paymentMethod === "COD" ? "PENDING" : (paymentStatus || "PENDING"), paymentId: paymentMethod === "COD" ? "" : (paymentId || ""),
+        paymentMethod, paymentStatus: paymentMethod === "COD" ? "PENDING" : "PAID", paymentId: paymentMethod === "COD" ? "" : (paymentId || ""),
       });
       createdOrders.push(order);
     }
@@ -180,9 +242,10 @@ router.post("/", auth, async (req, res) => {
 
     if (global.io) {
       for (const order of createdOrders) {
-        global.io.emit("orderPlaced", order);
-        global.io.emit("orderUpdated", order);
-        if (order.storeId) global.io.to("store_" + order.storeId).emit("newStoreOrder", order);
+        // Broadcast only order identifiers: clients fetch role-authorized details from API.
+        global.io.emit("orderPlaced", { _id: order._id });
+        global.io.emit("orderUpdated", { _id: order._id });
+        if (order.storeId) global.io.to("store_" + order.storeId).emit("newStoreOrder", { _id: order._id });
       }
       global.io.emit("inventoryUpdated", { productIds: ids });
     }
@@ -201,7 +264,7 @@ router.post("/", auth, async (req, res) => {
     });
   } catch (err) {
     console.log("PLACE ORDER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(err.status || 500).json({ message: err.status ? err.message : "Server error" });
   }
 });
 
@@ -283,18 +346,18 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
     }
 
     if (global.io) {
-      global.io.emit("orderUpdated", order);
+      global.io.emit("orderUpdated", { _id: order._id });
 
       if (status === "STORE_ACCEPTED") {
-        global.io.emit("storeAcceptedOrder", order);
+        global.io.emit("storeAcceptedOrder", { _id: order._id });
       }
 
       if (status === "OUT_FOR_DELIVERY") {
-        global.io.emit("outForDelivery", order);
+        global.io.emit("outForDelivery", { _id: order._id });
       }
 
       if (status === "DELIVERED") {
-        global.io.emit("orderDelivered", order);
+        global.io.emit("orderDelivered", { _id: order._id });
       }
     }
 

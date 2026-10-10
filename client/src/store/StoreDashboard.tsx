@@ -29,7 +29,8 @@ type DeliveryBoy = {
 
 type Order = {
   _id: string;
-  total: number;
+  total?: number;
+  merchandiseTotal?: number;
   status: string;
   paymentMethod?: string;
   paymentStatus?: string;
@@ -331,7 +332,7 @@ export default function StoreDashboard() {
   const deliveryAcceptedOrders = orders.filter((o) => o.status === "DELIVERY_ACCEPTED");
   const activeOrders = orders.filter((o) => !["DELIVERED", "STORE_CANCELLED", "CANCELLED"].includes(o.status));
   const deliveredOrders = orders.filter((o) => o.status === "DELIVERED");
-  const sales = deliveredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const sales = deliveredOrders.reduce((sum, o) => sum + (Number(o.merchandiseTotal) || 0), 0);
   const lowStock = products.filter((p) => p.stock <= 5).length;
 
   return (
@@ -513,7 +514,7 @@ export default function StoreDashboard() {
             ) : (
               orders.map((order) => (
                 <div className="order-card" key={order._id}>
-                  <div className="order-card-head"><div><span className={`order-status status-${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span><h3>Order #{order._id.slice(-6).toUpperCase()}</h3></div><strong>₹{order.total}</strong></div>
+                  <div className="order-card-head"><div><span className={`order-status status-${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span><h3>Order #{order._id.slice(-6).toUpperCase()}</h3></div><strong>₹{order.merchandiseTotal ?? 0}</strong></div>
                   
                   <p>
                     <b>Payment:</b> {order.paymentMethod} / {order.paymentStatus}
@@ -574,7 +575,7 @@ export default function StoreDashboard() {
                   <div className="notification-card" key={order._id}>
                     <span>
                       🔔 New order received #{order._id.slice(-6)} — ₹
-                      {order.total}
+                      {order.merchandiseTotal ?? 0}
                     </span>
                     <button onClick={() => acceptOrder(order._id)}>
                       Accept

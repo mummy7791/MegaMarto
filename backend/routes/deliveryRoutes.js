@@ -98,9 +98,9 @@ router.put("/accept-order/:id", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber");
 
     if (global.io) {
-      global.io.emit("orderUpdated", updatedOrder);
-      global.io.emit("deliveryAcceptedOrder", updatedOrder);
-      global.io.emit("orderTaken", updatedOrder);
+      global.io.emit("orderUpdated", { _id: updatedOrder._id });
+      global.io.emit("deliveryAcceptedOrder", { _id: updatedOrder._id });
+      global.io.emit("orderTaken", { _id: updatedOrder._id });
       global.io
         .to(`delivery_${req.user.id}`)
         .emit("myDeliveryOrder", updatedOrder);
@@ -182,18 +182,18 @@ router.put("/delivery-status/:id", auth, async (req, res) => {
       .populate("deliveryBoy", "name phone bikeNumber");
 
     if (global.io) {
-      global.io.emit("orderUpdated", updatedOrder);
+      global.io.emit("orderUpdated", { _id: updatedOrder._id });
 
       if (status === "PICKED_UP") {
-        global.io.emit("orderPickedUp", updatedOrder);
+        global.io.emit("orderPickedUp", { _id: updatedOrder._id });
       }
 
       if (status === "OUT_FOR_DELIVERY") {
-        global.io.emit("outForDelivery", updatedOrder);
+        global.io.emit("outForDelivery", { _id: updatedOrder._id });
       }
 
       if (status === "DELIVERED") {
-        global.io.emit("orderDelivered", updatedOrder);
+        global.io.emit("orderDelivered", { _id: updatedOrder._id });
       }
     }
 

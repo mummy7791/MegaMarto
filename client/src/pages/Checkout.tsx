@@ -31,7 +31,7 @@ type PaymentMethod = "RAZORPAY" | "COD";
 
 type CheckoutQuote = {
   shopCount: number;
-  shops: Array<{ storeName: string; itemTotal: number; deliveryFee: number; handlingFee: number; total: number }>;
+  shops: Array<{ storeName: string; itemTotal: number; deliveryFee: number; handlingFee: number; total: number; distanceKm: number; etaMinutes: number }>;
   pricing: { itemTotal: number; deliveryFee: number; handlingFee: number; total: number };
 };
 
@@ -231,13 +231,14 @@ function Checkout() {
     return true;
   };
 
-  const fetchCheckoutQuote = async () => {
+  const fetchCheckoutQuote = async (location: LocationData) => {
     const token = localStorage.getItem("customerToken") || localStorage.getItem("token");
     const res = await fetch("https://megamarto-backend.onrender.com/orders/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
         items: cart.map((item) => ({ productId: item._id || item.id, qty: item.qty || 1 })),
+        location,
       }),
     });
     const data = await res.json();
@@ -270,7 +271,7 @@ function Checkout() {
 
     try {
       setLoading(true);
-      await fetchCheckoutQuote();
+      await fetchCheckoutQuote(location);
       setPaymentOpen(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout total failed");
@@ -531,7 +532,7 @@ function Checkout() {
       <div className="summary">
         <h3><span className="step-no">2</span> Order Summary ({totalItems} items)</h3>
         {quote && quote.shopCount > 1 && <p className="section-note">Your cart has items from {quote.shopCount} shops. Pay once; MegaMarto creates separate shop orders and deliveries.</p>}
-        {quote && <div className="shop-split-summary">{quote.shops.map((shop, index) => <div className="shop-split-row" key={shop.storeName + index}><div><b>🏪 {shop.storeName}</b><small>Items ₹{shop.itemTotal} · Delivery {shop.deliveryFee === 0 ? "FREE" : `₹${shop.deliveryFee}`} · Handling ₹{shop.handlingFee}</small></div><b>₹{shop.total}</b></div>)}</div>}
+        {quote && <div className="shop-split-summary">{quote.shops.map((shop, index) => <div className="shop-split-row" key={shop.storeName + index}><div><b>🏪 {shop.storeName}</b><small>{shop.distanceKm} km · ETA {shop.etaMinutes} min · Items ₹{shop.itemTotal} · Delivery {shop.deliveryFee === 0 ? "FREE" : `₹${shop.deliveryFee}`} · Handling ₹{shop.handlingFee}</small></div><b>₹{shop.total}</b></div>)}</div>}
 
         {cart.map((item) => (
           <div key={item._id || item.id} className="summary-item">

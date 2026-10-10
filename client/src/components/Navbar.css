@@ -129,7 +129,7 @@
 
 @media(max-width:1050px){
   .mm-navbar{grid-template-columns:auto 1fr auto}
-  .mm-location-pill{display:none}
+  .mm-location-pill{display:flex;grid-column:1/-1;grid-row:3;width:100%;min-height:44px;cursor:pointer}
   .mm-search{grid-column:2/3}
   .mm-menu-btn{display:grid;place-items:center}
   .mm-links{display:none;grid-column:1/-1;flex-direction:column;align-items:stretch;padding:8px 0 4px}
@@ -145,4 +145,5 @@
   .mm-logo-copy b{font-size:19px}
   .mm-logo-mark{width:38px;height:38px;border-radius:12px}
   .mm-search{grid-column:1/-1;grid-row:2;height:44px}
+  .mm-location-pill{grid-column:1/-1;grid-row:3}
 }

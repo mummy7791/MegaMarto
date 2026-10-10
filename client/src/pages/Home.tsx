@@ -64,6 +64,8 @@ function Home() {
   const navigate = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [nearby, setNearby] = useState<Array<{_id:string;storeName:string;distanceKm:number;etaMinutes:number}>>([]);
+  const [nearbyMessage, setNearbyMessage] = useState("Enable location to see shops delivering to you.");
   const [selected, setSelected] = useState("All");
   const [slide, setSlide] = useState(0);
 
@@ -82,6 +84,30 @@ function Home() {
       return [];
     }
   });
+
+  useEffect(() => {
+    let active = true;
+    const loadNearby = () => {
+      try {
+        const gps = JSON.parse(localStorage.getItem("userLocation") || "null");
+        if (!gps || !Number.isFinite(Number(gps.lat)) || !Number.isFinite(Number(gps.lng))) return;
+        setNearbyMessage("Finding shops near your location...");
+        fetch(`${API_URL}/store/nearby?lat=${encodeURIComponent(gps.lat)}&lng=${encodeURIComponent(gps.lng)}`)
+          .then(res => { if (!res.ok) throw new Error("Nearby stores unavailable"); return res.json(); })
+          .then(data => {
+            if (!active) return;
+            if (Array.isArray(data)) {
+              setNearby(data);
+              setNearbyMessage(data.length ? "" : "No shops currently deliver to this location.");
+            }
+          })
+          .catch(() => { if (active) setNearbyMessage("Nearby stores could not load. Try again."); });
+      } catch { /* GPS is not yet available */ }
+    };
+    loadNearby();
+    window.addEventListener("locationUpdated", loadNearby);
+    return () => { active = false; window.removeEventListener("locationUpdated", loadNearby); };
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/products`)
@@ -166,6 +192,11 @@ function Home() {
 
   return (
     <main className="mm-home">
+      <section style={{padding:"14px 18px",margin:"12px auto",maxWidth:1200,background:"#f0fdf4",borderRadius:14}} aria-label="Nearby delivery shops">
+        <strong>📍 Shops delivering near you</strong>
+        {nearbyMessage && <p>{nearbyMessage}</p>}
+        {nearby.length > 0 && <div style={{display:"flex",gap:12,overflowX:"auto",paddingTop:10}}>{nearby.map(shop=><div key={shop._id} style={{minWidth:180,padding:12,background:"white",borderRadius:10,border:"1px solid #d5e8d8"}}><strong>{shop.storeName}</strong><p>{shop.distanceKm} km away</p><small>Estimated {shop.etaMinutes} min</small></div>)}</div>}
+      </section>
       <section className="mm-banner-section" aria-label="MegaMarto grocery offers">
         <div className="mm-banner-shell">
           <img className="mm-banner-img" src={currentSlide.image} alt={currentSlide.alt} fetchPriority={slide === 0 ? "high" : "auto"} />

@@ -9,7 +9,7 @@ const Product = require("../models/Product");
 
 const Store = require("../models/Store");
 const MAX_KM = 30;
-const validGPS = p => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
+const validGPS = p => p && p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
 function kilometers(a,b) {
  const rad = Math.PI/180, dLat = (b.lat-a.lat)*rad, dLng = (b.lng-a.lng)*rad;
  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
@@ -142,7 +142,7 @@ router.post("/", auth, async (req, res) => {
       if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
     }
     const ids = [...requested.keys()];
-    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName location");
+    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName location deliveryRadiusKm");
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
@@ -205,9 +205,10 @@ router.post("/", auth, async (req, res) => {
 
     if (global.io) {
       for (const order of createdOrders) {
-        global.io.emit("orderPlaced", order);
-        global.io.emit("orderUpdated", order);
-        if (order.storeId) global.io.to("store_" + order.storeId).emit("newStoreOrder", order);
+        // Broadcast only order identifiers: clients fetch role-authorized details from API.
+        global.io.emit("orderPlaced", { _id: order._id });
+        global.io.emit("orderUpdated", { _id: order._id });
+        if (order.storeId) global.io.to("store_" + order.storeId).emit("newStoreOrder", { _id: order._id });
       }
       global.io.emit("inventoryUpdated", { productIds: ids });
     }
@@ -308,18 +309,18 @@ router.put("/:id/status", auth, adminOnly, async (req, res) => {
     }
 
     if (global.io) {
-      global.io.emit("orderUpdated", order);
+      global.io.emit("orderUpdated", { _id: order._id });
 
       if (status === "STORE_ACCEPTED") {
-        global.io.emit("storeAcceptedOrder", order);
+        global.io.emit("storeAcceptedOrder", { _id: order._id });
       }
 
       if (status === "OUT_FOR_DELIVERY") {
-        global.io.emit("outForDelivery", order);
+        global.io.emit("outForDelivery", { _id: order._id });
       }
 
       if (status === "DELIVERED") {
-        global.io.emit("orderDelivered", order);
+        global.io.emit("orderDelivered", { _id: order._id });
       }
     }
 

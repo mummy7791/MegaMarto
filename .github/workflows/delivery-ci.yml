@@ -1,0 +1,33 @@
+name: MegaMarto delivery PR checks
+on:
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'backend/**'
+      - '.github/workflows/delivery-ci.yml'
+  workflow_dispatch:
+jobs:
+  client-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run build
+  backend-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify backend JavaScript syntax
+        run: |
+          find backend -type f -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check

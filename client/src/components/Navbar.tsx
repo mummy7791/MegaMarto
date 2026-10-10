@@ -188,8 +188,6 @@ function Navbar() {
                 <div className="profile-dropdown">
                   <p onClick={() => goTo("/profile")}>My Profile</p>
                   <p onClick={() => goTo("/orders")}>My Orders</p>
-                  <p onClick={() => goTo("/store-login")}>Store Login</p>
-                  <p onClick={() => goTo("/delivery-login")}>Delivery Login</p>
                   <p className="danger" onClick={logoutCustomer}>Logout</p>
                 </div>
               )}

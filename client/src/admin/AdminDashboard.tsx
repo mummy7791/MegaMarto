@@ -314,7 +314,17 @@ export default function AdminDashboard() {
             <input placeholder="Price" value={productForm.price} onChange={(e) => setProductForm({ ...productForm, price: e.target.value })} />
             <input placeholder="MRP" type="number" min="1" value={productForm.mrp} onChange={(e) => setProductForm({ ...productForm, mrp: e.target.value })} />
             <input placeholder="Unit (e.g. 1 kg, 500 g)" value={productForm.unit} onChange={(e) => setProductForm({ ...productForm, unit: e.target.value })} />
-            <input placeholder="Image URL" value={productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
+            <label style={{ display: "block", marginBottom: 8 }}>Product photo (JPG, PNG or WebP)</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 750000) { toast.error("Please select an image smaller than 750 KB"); return; }
+              const reader = new FileReader();
+              reader.onload = () => setProductForm(prev => ({ ...prev, image: String(reader.result || "") }));
+              reader.readAsDataURL(file);
+            }} />
+            <input placeholder="Or paste product image URL" value={productForm.image.startsWith("data:") ? "" : productForm.image} onChange={(e) => setProductForm({ ...productForm, image: e.target.value })} />
+            {productForm.image && <img src={productForm.image} alt="Product preview" style={{ width: 120, height: 100, objectFit: "cover", borderRadius: 12, marginTop: 8 }} />}
             <input placeholder="Stock" type="number" min="0" step="1" value={productForm.stock} onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })} />
 
             <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}>

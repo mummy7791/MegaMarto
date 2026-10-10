@@ -55,7 +55,7 @@ export default function Stores() {
       setStores(data);
     } catch (err) {
       console.error("LOAD STORES ERROR:", err);
-      alert("Server error");
+      alert("Could not connect to MegaMarto backend. Check Render logs and try again.");
     } finally {
       setLoading(false);
     }

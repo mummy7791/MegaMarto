@@ -267,6 +267,10 @@ function Login() {
                 </p>
               )}
 
+              {!isAdminLogin && <p className="auth-link" style={{ display: "flex", justifyContent: "center", gap: 18, flexWrap: "wrap" }}>
+                <span onClick={() => navigate("/store-login")}>Store Login</span>
+                <span onClick={() => navigate("/delivery-login")}>Delivery Login</span>
+              </p>}
               <p className="auth-link">
                 {isAdminLogin ? (
                   <span onClick={() => navigate("/customer-login")}>

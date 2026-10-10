@@ -24,6 +24,25 @@ function calculateDelivery(store,location,amount) {
 }
 
 
+async function roadDelivery(store,location,amount) {
+ const base=calculateDelivery(store,location,amount); // strict geofence, never relaxed by routing
+ if(typeof fetch!=="function") return {...base,etaSource:"estimate"};
+ const a=store.location,b=location;
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),2500);
+ try {
+  const url=`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+  const response=await fetch(url,{signal:controller.signal});
+  if(!response.ok) throw new Error("Routing unavailable");
+  const route=(await response.json()).routes?.[0];
+  if(!route || !Number.isFinite(route.distance)||!Number.isFinite(route.duration)) throw new Error("No road route");
+  const distanceKm=Math.round(route.distance/100)/10;
+  const etaMinutes=Math.ceil(15+route.duration/60);
+  return {...base,distanceKm,etaMinutes,etaSource:"road",deliveryFee:amount>=499?0:25+5*Math.ceil(distanceKm/2)};
+ } catch {return {...base,etaSource:"estimate"};}
+ finally {clearTimeout(timeout);}
+}
+
 /* ================= CONTROLLERS ================= */
 const orderController = require("../controllers/orderController");
 
@@ -81,9 +100,9 @@ router.post("/quote", auth, async (req, res) => {
       groups.get(key).itemTotal += Number(product.price) * qty;
     }
 
-    const shops = [...groups.values()].map((group) => {
+    const shops = await Promise.all([...groups.values()].map(async (group) => {
       const store = group.storeId ? products.find(p=>String(p.storeId?._id || p.storeId)===String(group.storeId))?.storeId : null;
-      const {deliveryFee,distanceKm,etaMinutes}=calculateDelivery(store,location,group.itemTotal);
+      const {deliveryFee,distanceKm,etaMinutes,etaSource}=await roadDelivery(store,location,group.itemTotal);
       const handlingFee = 5;
       const commissionPercent = group.storeId ? 10 : 0;
       const adminCommission = Math.round((group.itemTotal * commissionPercent) / 100);
@@ -95,13 +114,14 @@ router.post("/quote", auth, async (req, res) => {
         deliveryFee,
         distanceKm,
         etaMinutes,
+        etaSource,
         handlingFee,
         commissionPercent,
         adminCommission,
         storeAmount,
         total: group.itemTotal + deliveryFee + handlingFee,
       };
-    });
+    }));
 
     const pricing = shops.reduce(
       (acc, shop) => ({
@@ -164,7 +184,7 @@ router.post("/", auth, async (req, res) => {
 
     for(const group of groups.values()) {
       const store = group.storeId ? await Store.findById(group.storeId).select("location deliveryRadiusKm") : null;
-      group.delivery = calculateDelivery(store,location,group.itemTotal);
+      group.delivery = await roadDelivery(store,location,group.itemTotal);
     }
     const reserved = [];
     try {

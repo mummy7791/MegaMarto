@@ -102,7 +102,7 @@ router.get("/stores", auth, adminOnly, async (req, res) => {
 ======================================================= */
 router.put("/stores/:id", auth, adminOnly, async (req, res) => {
   try {
-    const { storeName, ownerName, email, password, phone, address, status } =
+    const { storeName, ownerName, email, password, phone, address, status, location } =
       req.body;
 
     const updateData = {
@@ -119,6 +119,11 @@ router.put("/stores/:id", auth, adminOnly, async (req, res) => {
         delete updateData[key];
       }
     });
+
+    if (location !== undefined) {
+      if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng) || Math.abs(location.lat) > 90 || Math.abs(location.lng) > 180) return res.status(400).json({ message: "Invalid pickup GPS coordinates" });
+      updateData.location = { lat: location.lat, lng: location.lng };
+    }
 
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);

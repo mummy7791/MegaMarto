@@ -62,16 +62,17 @@ router.get("/stats", auth, adminOnly, async (req, res) => {
 ======================================================= */
 router.post("/stores", auth, adminOnly, async (req, res) => {
   try {
-    const { storeName, ownerName, email, password, phone, address } = req.body;
+    const { storeName, ownerName, email, password, phone, address, location } = req.body;
     if (![storeName, ownerName, email, password, phone, address].every(v => typeof v === "string" && v.trim())) {
       return res.status(400).json({ message: "All store fields are required" });
     }
     if (password.length < 8) return res.status(400).json({ message: "Store password must be at least 8 characters" });
     const normalizedEmail = email.trim().toLowerCase();
     if (await Store.exists({ email: normalizedEmail })) return res.status(409).json({ message: "Store email already exists" });
+    if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng) || Math.abs(location.lat) > 90 || Math.abs(location.lng) > 180) return res.status(400).json({ message: "Select a valid store pickup GPS location" });
     const store = await Store.create({
       storeName: storeName.trim(), ownerName: ownerName.trim(), email: normalizedEmail,
-      password: await bcrypt.hash(password, 12), phone: phone.trim(), address: address.trim(),
+      password: await bcrypt.hash(password, 12), phone: phone.trim(), address: address.trim(), location: { lat: location.lat, lng: location.lng },
     });
     const result = store.toObject();
     delete result.password;

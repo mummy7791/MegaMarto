@@ -7,6 +7,23 @@ const adminOnly = require("../middleware/admin");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 
+const Store = require("../models/Store");
+const MAX_KM = 30;
+const validGPS = p => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
+function kilometers(a,b) {
+ const rad = Math.PI/180, dLat = (b.lat-a.lat)*rad, dLng = (b.lng-a.lng)*rad;
+ const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+ return 6371*2*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+function calculateDelivery(store,location,amount) {
+ if(!validGPS(location)) throw Object.assign(new Error("Allow accurate customer GPS before ordering"),{status:400});
+ if(!validGPS(store?.location)) throw Object.assign(new Error("Store pickup GPS not configured"),{status:409});
+ const km=kilometers(store.location,location);
+ if(km>MAX_KM) throw Object.assign(new Error("Delivery unavailable beyond 30 km. Shop distance: "+km.toFixed(1)+" km"),{status:422});
+ return {distanceKm:Math.round(km*10)/10,etaMinutes:Math.ceil(15+km/18*60),deliveryFee:amount>=499?0:25+5*Math.ceil(km/2)};
+}
+
+
 /* ================= CONTROLLERS ================= */
 const orderController = require("../controllers/orderController");
 
@@ -19,7 +36,7 @@ const getOrderById = orderController.getOrderById;
 ===================================================== */
 router.post("/quote", auth, async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items, location } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Cart items required" });
     }
@@ -34,7 +51,7 @@ router.post("/quote", auth, async (req, res) => {
     }
     const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
-      .populate("storeId", "storeName");
+      .populate("storeId", "storeName location");
 
     if (products.length !== ids.length) {
       return res.status(400).json({ message: "One or more products are unavailable" });
@@ -65,7 +82,8 @@ router.post("/quote", auth, async (req, res) => {
     }
 
     const shops = [...groups.values()].map((group) => {
-      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+      const store = group.storeId ? products.find(p=>String(p.storeId?._id || p.storeId)===String(group.storeId))?.storeId : null;
+      const {deliveryFee,distanceKm,etaMinutes}=calculateDelivery(store,location,group.itemTotal);
       const handlingFee = 5;
       const commissionPercent = group.storeId ? 10 : 0;
       const adminCommission = Math.round((group.itemTotal * commissionPercent) / 100);
@@ -75,6 +93,8 @@ router.post("/quote", auth, async (req, res) => {
         storeName: group.storeName,
         itemTotal: group.itemTotal,
         deliveryFee,
+        distanceKm,
+        etaMinutes,
         handlingFee,
         commissionPercent,
         adminCommission,
@@ -96,7 +116,7 @@ router.post("/quote", auth, async (req, res) => {
     res.json({ shopCount: shops.length, shops, pricing });
   } catch (err) {
     console.log("ORDER QUOTE ERROR:", err);
-    res.status(500).json({ message: "Unable to calculate checkout total" });
+    res.status(err.status || 500).json({ message: err.status ? err.message : "Unable to calculate checkout total" });
   }
 });
 
@@ -122,7 +142,7 @@ router.post("/", auth, async (req, res) => {
       if (requested.get(id) > 100) return res.status(400).json({ message: "Maximum 100 units per product" });
     }
     const ids = [...requested.keys()];
-    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName");
+    const products = await Product.find({ _id: { $in: ids }, isAvailable: true }).populate("storeId", "storeName location");
     if (products.length !== ids.length) return res.status(400).json({ message: "One or more products are unavailable" });
 
     const productMap = new Map(products.map((p) => [String(p._id), p]));
@@ -142,6 +162,10 @@ router.post("/", auth, async (req, res) => {
       group.itemTotal += product.price * qty;
     }
 
+    for(const group of groups.values()) {
+      const store = group.storeId ? await Store.findById(group.storeId).select("location") : null;
+      group.delivery = calculateDelivery(store,location,group.itemTotal);
+    }
     const reserved = [];
     try {
       for (const [id, qty] of requested) {
@@ -156,7 +180,7 @@ router.post("/", auth, async (req, res) => {
     const createdOrders = [];
     try {
     for (const group of groups.values()) {
-      const deliveryFee = group.itemTotal >= 499 ? 0 : 35;
+      const {deliveryFee,distanceKm,etaMinutes}=group.delivery;
       const handlingFee = 5;
       const calculatedTotal = group.itemTotal + deliveryFee + handlingFee;
       const commissionPercent = group.storeId ? 10 : 0;
@@ -164,6 +188,7 @@ router.post("/", auth, async (req, res) => {
       const storeAmount = group.itemTotal - adminCommission;
       const order = await Order.create({
         items: group.items, total: calculatedTotal, address, location, userId: req.user.id,
+        distanceKm, etaMinutes, deliveryFee, handlingFee,
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
         commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
@@ -201,7 +226,7 @@ router.post("/", auth, async (req, res) => {
     });
   } catch (err) {
     console.log("PLACE ORDER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(err.status || 500).json({ message: err.status ? err.message : "Server error" });
   }
 });
 

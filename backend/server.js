@@ -197,12 +197,12 @@ app.get("/products/:id", async (req, res) => {
 });
 
 // ADMIN DIRECT ADD PRODUCT
-app.post("/products", async (req, res) => {
+app.post("/products", auth, adminOnly, async (req, res) => {
   try {
     const product = await Product.create({
-      ...req.body,
-      storeName: req.body.storeName || "Admin Store",
-      storeId: req.body.storeId || null,
+      ...Object.fromEntries(Object.entries(req.body).filter(([key]) => ["name","price","mrp","unit","image","category","stock","description","isAvailable","featured","tags"].includes(key))),
+      storeName: "Admin Store",
+      storeId: null,
     });
 
     if (global.io) {

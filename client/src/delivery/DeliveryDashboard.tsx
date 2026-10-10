@@ -259,7 +259,7 @@ export default function DeliveryDashboard() {
   const openStoreMap = (order: Order) => {
     const lat = order.storeId?.location?.lat;
     const lng = order.storeId?.location?.lng;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat == null || lng == null) {
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
       alert("Exact shop pickup GPS has not been saved. Ask admin to update this store location.");
       return;
     }

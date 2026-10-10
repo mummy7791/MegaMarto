@@ -28,3 +28,27 @@ img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 ::-webkit-scrollbar{width:7px;height:7px}
 ::-webkit-scrollbar-thumb{background:#b7c8bc;border-radius:999px}
+
+/* Lightweight native Android rendering: avoid expensive effects in the WebView. */
+.mm-native-app *,
+.mm-native-app *::before,
+.mm-native-app *::after {
+  scroll-behavior: auto !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.mm-native-app .mm-navbar-shell,
+.mm-native-app .mm-banner-shell,
+.mm-native-app .mm-banner-img,
+.mm-native-app .mm-category,
+.mm-native-app .mm-product-card {
+  box-shadow: none !important;
+}
+.mm-native-app button,
+.mm-native-app a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mm-native-app .mm-home {
+  -webkit-overflow-scrolling: touch;
+}

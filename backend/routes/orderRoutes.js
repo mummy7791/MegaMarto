@@ -19,7 +19,7 @@ function calculateDelivery(store,location,amount) {
  if(!validGPS(location)) throw Object.assign(new Error("Allow accurate customer GPS before ordering"),{status:400});
  if(!validGPS(store?.location)) throw Object.assign(new Error("Store pickup GPS not configured"),{status:409});
  const km=kilometers(store.location,location);
- if(km>MAX_KM) throw Object.assign(new Error("Delivery unavailable beyond 30 km. Shop distance: "+km.toFixed(1)+" km"),{status:422});
+ if(km>Math.min(MAX_KM,Number(store.deliveryRadiusKm)||MAX_KM)) throw Object.assign(new Error("Delivery unavailable beyond 30 km. Shop distance: "+km.toFixed(1)+" km"),{status:422});
  return {distanceKm:Math.round(km*10)/10,etaMinutes:Math.ceil(15+km/18*60),deliveryFee:amount>=499?0:25+5*Math.ceil(km/2)};
 }
 
@@ -51,7 +51,7 @@ router.post("/quote", auth, async (req, res) => {
     }
     const ids = [...requested.keys()];
     const products = await Product.find({ _id: { $in: ids }, isAvailable: true })
-      .populate("storeId", "storeName location");
+      .populate("storeId", "storeName location deliveryRadiusKm");
 
     if (products.length !== ids.length) {
       return res.status(400).json({ message: "One or more products are unavailable" });
@@ -163,7 +163,7 @@ router.post("/", auth, async (req, res) => {
     }
 
     for(const group of groups.values()) {
-      const store = group.storeId ? await Store.findById(group.storeId).select("location") : null;
+      const store = group.storeId ? await Store.findById(group.storeId).select("location deliveryRadiusKm") : null;
       group.delivery = calculateDelivery(store,location,group.itemTotal);
     }
     const reserved = [];

@@ -56,6 +56,8 @@ export default function StoreDashboard() {
   const [tab, setTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -179,10 +181,12 @@ export default function StoreDashboard() {
 
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       toast.error("Please select image only");
       return;
     }
+
+    if (file.size > 1500000) { toast.error("Image must be smaller than 1.5 MB"); return; }
 
     const reader = new FileReader();
 
@@ -199,11 +203,13 @@ export default function StoreDashboard() {
   const addProduct = async () => {
     if (!checkToken()) return;
 
-    if (!form.name || !form.price || !form.image || !form.category || !form.stock) {
+    if (!form.name.trim() || !form.image || !form.category || !Number.isFinite(Number(form.price)) || Number(form.price) <= 0 || !Number.isInteger(Number(form.stock)) || Number(form.stock) < 0) {
       toast.error("Please fill all product details");
       return;
     }
 
+    if (saving) return;
+    setSaving(true);
     try {
       const res = await fetch(`${API}/store/products`, {
         method: "POST",
@@ -221,10 +227,10 @@ export default function StoreDashboard() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        toast.error(data.message || "Product add failed");
+        toast.error(res.status === 413 ? "Image too large for server. Choose a smaller image." : (data.message || `Product add failed (${res.status})`));
         return;
       }
 
@@ -241,8 +247,19 @@ export default function StoreDashboard() {
 
       await loadProducts();
     } catch {
-      toast.error("Server error");
+      toast.error("Unable to save product. Check backend connection.");
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const refreshCurrent = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      if (tab === "products") await loadProducts();
+      else await loadOrders();
+    } finally { setRefreshing(false); }
   };
 
   const deleteProduct = async (id: string) => {
@@ -312,9 +329,9 @@ export default function StoreDashboard() {
 
   const pendingOrders = orders.filter((o) => o.status === "STORE_PENDING");
   const deliveryAcceptedOrders = orders.filter((o) => o.status === "DELIVERY_ACCEPTED");
-  const activeOrders = orders.filter((o) => !["DELIVERED", "STORE_CANCELLED"].includes(o.status));
+  const activeOrders = orders.filter((o) => !["DELIVERED", "STORE_CANCELLED", "CANCELLED"].includes(o.status));
   const deliveredOrders = orders.filter((o) => o.status === "DELIVERED");
-  const sales = deliveredOrders.reduce((sum, o) => sum + o.total, 0);
+  const sales = deliveredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
   const lowStock = products.filter((p) => p.stock <= 5).length;
 
   return (
@@ -366,9 +383,9 @@ export default function StoreDashboard() {
           </div>
 
           {tab === "products" ? (
-            <button onClick={loadProducts}>Refresh Products</button>
+            <button disabled={refreshing} onClick={() => void refreshCurrent()}>{refreshing ? "Refreshing..." : "Refresh Products"}</button>
           ) : (
-            <button onClick={loadOrders}>Refresh Orders</button>
+            <button disabled={refreshing} onClick={() => void refreshCurrent()}>{refreshing ? "Refreshing..." : "Refresh Orders"}</button>
           )}
         </header>
 
@@ -454,7 +471,7 @@ export default function StoreDashboard() {
                   }
                 />
 
-                <button onClick={addProduct}>Add Product</button>
+                <button disabled={saving} onClick={() => void addProduct()}>{saving ? "Adding Product..." : "Add Product"}</button>
               </div>
             </section>
 
@@ -468,8 +485,9 @@ export default function StoreDashboard() {
                   products.map((p) => (
                     <div className="product-card" key={p._id}>
                       <img
-                        src={p.image || "https://via.placeholder.com/150"}
+                        src={p.image || "/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png"}
                         alt={p.name}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/MegaMarto%20Fresh%20Grocery%20Delivery%20Logo.png"; }}
                       />
                       <h3>{p.name}</h3>
                       <p className="category">{p.category}</p>

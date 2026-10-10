@@ -186,6 +186,23 @@ router.post("/", auth, async (req, res) => {
       const store = group.storeId ? await Store.findById(group.storeId).select("location deliveryRadiusKm") : null;
       group.delivery = await roadDelivery(store,location,group.itemTotal);
     }
+    // Never trust client-supplied PAID status. Verify against Razorpay before reserving stock.
+    if (paymentMethod === "RAZORPAY") {
+      if (!paymentId || typeof paymentId !== "string") return res.status(400).json({message:"Verified Razorpay payment required"});
+      try {
+        const Razorpay = require("razorpay");
+        const gateway = new Razorpay({key_id:process.env.RAZORPAY_KEY_ID,key_secret:process.env.RAZORPAY_KEY_SECRET});
+        const payment = await gateway.payments.fetch(paymentId);
+        const expectedPaise = [...groups.values()].reduce((sum,g)=>sum+Math.round((g.itemTotal+g.delivery.deliveryFee+5)*100),0);
+        if (payment.status !== "captured" || payment.currency !== "INR" || Number(payment.amount) !== expectedPaise)
+          return res.status(400).json({message:"Payment not captured or checkout amount mismatch"});
+        const usedPayment = await Order.exists({paymentId});
+        if (usedPayment) return res.status(409).json({message:"Payment already used for an order"});
+      } catch (err) {
+        console.error("RAZORPAY PAYMENT VALIDATION ERROR",err);
+        return res.status(400).json({message:"Unable to validate payment with gateway"});
+      }
+    }
     const reserved = [];
     try {
       for (const [id, qty] of requested) {
@@ -212,7 +229,7 @@ router.post("/", auth, async (req, res) => {
         storeId: group.storeId, storeName: group.storeName, storeStatus: "PENDING",
         commissionPercent, adminCommission, storeAmount, settlementStatus: "PENDING",
         status: group.storeId ? "STORE_PENDING" : "PLACED",
-        paymentMethod, paymentStatus: paymentMethod === "COD" ? "PENDING" : (paymentStatus || "PENDING"), paymentId: paymentMethod === "COD" ? "" : (paymentId || ""),
+        paymentMethod, paymentStatus: paymentMethod === "COD" ? "PENDING" : "PAID", paymentId: paymentMethod === "COD" ? "" : (paymentId || ""),
       });
       createdOrders.push(order);
     }

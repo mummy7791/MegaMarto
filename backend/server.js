@@ -7,6 +7,11 @@ const { Server } = require("socket.io");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+const auth = require("./middleware/auth");
+const adminOnly = (req, res, next) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  next();
+};
 
 /* ================= ROUTES ================= */
 const authRoutes = require("./routes/authRoutes");

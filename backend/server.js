@@ -82,40 +82,7 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ================= TEMP CREATE ADMIN ================= */
-app.post("/create-admin", async (req, res) => {
-  try {
-    const exists = await User.findOne({ email: "admin@gmail.com" });
-
-    if (exists) {
-      return res.json({
-        message: "Admin already exists",
-        email: "admin@gmail.com",
-        password: "123456",
-      });
-    }
-
-    const password = await bcrypt.hash("123456", 10);
-
-    const admin = await User.create({
-      name: "Admin",
-      email: "admin@gmail.com",
-      password,
-      role: "admin",
-    });
-
-    res.json({
-      message: "Admin created successfully",
-      email: "admin@gmail.com",
-      password: "123456",
-      admin,
-    });
-  } catch (err) {
-    console.log("CREATE ADMIN ERROR:", err);
-    res.status(500).json({ message: "Create admin failed" });
-  }
-});
-
+/* Admin bootstrap removed: provision admins securely outside the public API. */
 /* ================= ROUTES ================= */
 app.use("/", authRoutes);
 app.use("/orders", orderRoutes);

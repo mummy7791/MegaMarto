@@ -261,6 +261,19 @@ export default function Stores() {
             <p>Phone: {store.phone}</p>
             <p>Address: {store.address}</p>
             <p>Pickup GPS: {store.location?.lat != null && store.location?.lng != null ? `${store.location.lat.toFixed(5)}, ${store.location.lng.toFixed(5)}` : "Not set (older store)"}</p>
+            <button type="button" disabled={loading || locating} onClick={() => {
+              if (!navigator.geolocation) { alert("GPS not supported"); return; }
+              if (!window.confirm("Are you physically at this shop? Save current GPS as its pickup point?")) return;
+              setLocating(true);
+              navigator.geolocation.getCurrentPosition(async pos => {
+                try {
+                  const response = await fetch(`${API}/admin/stores/${store._id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ location: { lat: pos.coords.latitude, lng: pos.coords.longitude } }) });
+                  if (!response.ok) throw new Error("Unable to save GPS");
+                  await loadStores();
+                } catch (err) { alert(err instanceof Error ? err.message : "Unable to save GPS"); }
+                finally { setLocating(false); }
+              }, err => { alert(err.message); setLocating(false); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+            }}>📍 Update Pickup GPS</button>
 
             <button onClick={() => deleteStore(store._id)} disabled={loading}>
               Delete

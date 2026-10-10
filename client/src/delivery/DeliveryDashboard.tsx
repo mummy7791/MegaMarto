@@ -13,6 +13,9 @@ const socket = io(API, {
 type Order = {
   _id: string;
   total: number;
+  distanceKm?: number;
+  etaMinutes?: number;
+  deliveryFee?: number;
   status: string;
   paymentMethod?: string;
   paymentStatus?: string;
@@ -366,7 +369,8 @@ export default function DeliveryDashboard() {
           <div className="delivery-card" key={order._id}>
             <div className="order-top">
               <div>
-                <h2>₹{order.total}</h2>
+                <h2>{order.paymentMethod === "COD" && order.paymentStatus !== "PAID" ? `Collect ₹${order.total}` : "Online paid / No cash to collect"}</h2>
+                {order.distanceKm != null && <p>{order.distanceKm} km · Estimated {order.etaMinutes ?? "—"} min · Delivery fee ₹{order.deliveryFee ?? 0}</p>}
 
                 <span className={`status ${order.status.toLowerCase()}`}>
                   {order.status.replaceAll("_", " ")}
@@ -380,9 +384,10 @@ export default function DeliveryDashboard() {
 
                 <button
                   className="map-btn"
+                  disabled={order.status === "STORE_ACCEPTED" || order.status === "DELIVERY_ACCEPTED"}
                   onClick={() => openCustomerMap(order)}
                 >
-                  🗺 Customer Map
+                  🗺 {order.status === "STORE_ACCEPTED" || order.status === "DELIVERY_ACCEPTED" ? "Customer map after pickup" : "Navigate to Customer"}
                 </button>
               </div>
             </div>
@@ -415,6 +420,7 @@ export default function DeliveryDashboard() {
                 </p>
               ))}
 
+              <p><strong>Next stop:</strong> {["STORE_ACCEPTED", "DELIVERY_ACCEPTED", "ASSIGNED"].includes(order.status) ? "Shop pickup — open Store Map" : ["PICKED_UP", "OUT_FOR_DELIVERY"].includes(order.status) ? "Customer drop — open Customer Map" : "Delivery completed"}</p>
               <h3 className="box-heading">Payment</h3>
               <p>
                 {order.paymentMethod || "COD"} /{" "}

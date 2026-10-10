@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Store = {
   _id: string;
@@ -20,12 +20,71 @@ type StoreForm = {
   location: { lat: number; lng: number } | null;
 };
 
+type GPS = { lat: number; lng: number };
+type LeafletMap = { setView: (coords: [number, number], zoom: number) => LeafletMap; on: (event: string, cb: (event: { latlng: GPS }) => void) => void; remove: () => void; invalidateSize: () => void };
+type LeafletMarker = { setLatLng: (coords: [number, number]) => void; on: (event: string, cb: (event: { target: { getLatLng: () => GPS } }) => void) => void; addTo: (map: LeafletMap) => LeafletMarker };
+type LeafletAPI = { map: (el: HTMLElement) => LeafletMap; tileLayer: (url: string, opts: { attribution: string; maxZoom: number }) => { addTo: (map: LeafletMap) => void }; marker: (coords: [number, number], opts: { draggable: boolean }) => LeafletMarker };
+declare global { interface Window { L?: LeafletAPI } }
+let leafletPromise: Promise<void> | undefined;
+function loadLeaflet(): Promise<void> {
+  if (window.L) return Promise.resolve();
+  if (!leafletPromise) {
+    leafletPromise = new Promise((resolve, reject) => {
+      if (!document.querySelector('link[data-megamarto-map]')) {
+        const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; css.dataset.megamartoMap = "1"; document.head.appendChild(css);
+      }
+      const script = document.createElement("script"); script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; script.onload = () => resolve(); script.onerror = () => { leafletPromise = undefined; reject(new Error("Map could not load. Check internet connection.")); }; document.head.appendChild(script);
+    });
+  }
+  return leafletPromise;
+}
+function StoreLocationMap({ value, onChange }: { value: GPS | null; onChange: (point: GPS) => void }) {
+  const element = useRef<HTMLDivElement>(null);
+  const map = useRef<LeafletMap | null>(null);
+  const pin = useRef<LeafletMarker | null>(null);
+  const callback = useRef(onChange);
+  callback.current = onChange;
+  const [mapError, setMapError] = useState("");
+  useEffect(() => {
+    let active = true;
+    loadLeaflet().then(() => {
+      if (!active || !element.current || !window.L) return;
+      const L = window.L;
+      const start: [number, number] = value ? [value.lat, value.lng] : [16.9891, 81.7837];
+      const instance = L.map(element.current).setView(start, value ? 17 : 12);
+      map.current = instance;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(instance);
+      const marker = L.marker(start, { draggable: true }).addTo(instance);
+      pin.current = marker;
+      instance.on("click", event => callback.current({ lat: event.latlng.lat, lng: event.latlng.lng }));
+      marker.on("dragend", event => { const p = event.target.getLatLng(); callback.current({ lat: p.lat, lng: p.lng }); });
+      setTimeout(() => { if (active) instance.invalidateSize(); }, 100);
+    }).catch(err => { if (active) setMapError(String(err)); });
+    return () => { active = false; map.current?.remove(); map.current = null; pin.current = null; };
+  }, []);
+  useEffect(() => {
+    if (value && map.current && pin.current) { pin.current.setLatLng([value.lat, value.lng]); map.current.setView([value.lat, value.lng], 17); }
+  }, [value?.lat, value?.lng]);
+  return <div style={{ marginTop: 14, width: "100%", minWidth: 0 }}>
+    <strong>📍 Select exact store pickup location</strong>
+    <p style={{ margin: "5px 0 10px", fontSize: 13 }}>Tap anywhere on the map or drag the green pin to the shop entrance. Zoom in for accuracy.</p>
+    <div ref={element} style={{ width: "100%", height: 300, borderRadius: 12, border: "1px solid #d8e5db", zIndex: 0 }} />
+    {mapError && <p role="alert">{mapError}</p>}
+    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+      <label style={{ flex: "1 1 130px" }}>Latitude<input type="number" step="any" value={value?.lat ?? ""} placeholder="Latitude" onChange={e => { const lat = Number(e.target.value); if (e.target.value !== "" && lat >= -90 && lat <= 90) onChange({ lat, lng: value?.lng ?? 81.7837 }); }} /></label>
+      <label style={{ flex: "1 1 130px" }}>Longitude<input type="number" step="any" value={value?.lng ?? ""} placeholder="Longitude" onChange={e => { const lng = Number(e.target.value); if (e.target.value !== "" && lng >= -180 && lng <= 180) onChange({ lat: value?.lat ?? 16.9891, lng }); }} /></label>
+    </div>
+    {value && <a href={`https://www.google.com/maps/search/?api=1&query=${value.lat},${value.lng}`} target="_blank" rel="noopener noreferrer">Preview selected pickup location in Google Maps ↗</a>}
+  </div>;
+}
+
 const API = "https://megamarto-backend.onrender.com";
 
 export default function Stores() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [editingGPS, setEditingGPS] = useState<{ id: string; location: GPS | null } | null>(null);
 
   const [form, setForm] = useState<StoreForm>({
     storeName: "",
@@ -234,6 +293,7 @@ export default function Stores() {
           <button type="button" disabled={locating} onClick={captureStoreLocation}>{locating ? "Getting shop GPS..." : "📍 Use Current Shop Location"}</button>
           {form.location ? <span>Pickup GPS saved: {form.location.lat.toFixed(5)}, {form.location.lng.toFixed(5)}</span> : <span>Stand at the shop and allow location permission to save pickup point.</span>}
         </div>
+        <StoreLocationMap value={form.location} onChange={location => setForm(prev => ({ ...prev, location }))} />
         <button onClick={createStore} disabled={loading}>
           {loading ? "Please wait..." : "Create Store"}
         </button>
@@ -261,19 +321,29 @@ export default function Stores() {
             <p>Phone: {store.phone}</p>
             <p>Address: {store.address}</p>
             <p>Pickup GPS: {store.location?.lat != null && store.location?.lng != null ? `${store.location.lat.toFixed(5)}, ${store.location.lng.toFixed(5)}` : "Not set (older store)"}</p>
-            <button type="button" disabled={loading || locating} onClick={() => {
-              if (!navigator.geolocation) { alert("GPS not supported"); return; }
-              if (!window.confirm("Are you physically at this shop? Save current GPS as its pickup point?")) return;
-              setLocating(true);
-              navigator.geolocation.getCurrentPosition(async pos => {
-                try {
-                  const response = await fetch(`${API}/admin/stores/${store._id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ location: { lat: pos.coords.latitude, lng: pos.coords.longitude } }) });
-                  if (!response.ok) throw new Error("Unable to save GPS");
-                  await loadStores();
-                } catch (err) { alert(err instanceof Error ? err.message : "Unable to save GPS"); }
-                finally { setLocating(false); }
-              }, err => { alert(err.message); setLocating(false); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
-            }}>📍 Update Pickup GPS</button>
+            <button type="button" onClick={() => setEditingGPS({ id: store._id, location: store.location ?? null })}>🗺 Change Location on Map</button>
+            {editingGPS?.id === store._id && <div style={{ marginTop: 14, padding: 12, background: "#f6faf7", borderRadius: 12 }}>
+              <StoreLocationMap value={editingGPS.location} onChange={location => setEditingGPS({ id: store._id, location })} />
+              <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                <button type="button" disabled={locating} onClick={() => {
+                  if (!navigator.geolocation) { alert("GPS not supported"); return; }
+                  setLocating(true);
+                  navigator.geolocation.getCurrentPosition(pos => { setEditingGPS({ id: store._id, location: { lat: pos.coords.latitude, lng: pos.coords.longitude } }); setLocating(false); }, err => { alert(err.message); setLocating(false); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+                }}>📍 Use Current GPS</button>
+                <button type="button" disabled={loading || !editingGPS.location} onClick={async () => {
+                  if (!editingGPS.location || !window.confirm("Save this exact pickup point for delivery partners?")) return;
+                  setLoading(true);
+                  try {
+                    const response = await fetch(`${API}/admin/stores/${store._id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ location: editingGPS.location }) });
+                    const data: { message?: string } = await response.json();
+                    if (!response.ok) throw new Error(data.message || "Could not update pickup GPS");
+                    setEditingGPS(null); await loadStores();
+                  } catch (err) { alert(err instanceof Error ? err.message : "Unable to save location"); }
+                  finally { setLoading(false); }
+                }}>Save Pickup Location</button>
+                <button type="button" onClick={() => setEditingGPS(null)}>Cancel</button>
+              </div>
+            </div>}
 
             <button onClick={() => deleteStore(store._id)} disabled={loading}>
               Delete
